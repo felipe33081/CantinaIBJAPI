@@ -1,36 +1,37 @@
 using CantinaIBJ.Data.Context;
+using CantinaIBJ.WebApi.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+IServiceCollection services = builder.Services;
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+services.AddControllers();
 
-builder.Services.AddEntityFrameworkNpgsql()
+services.AddEntityFrameworkNpgsql()
     .AddDbContext<PostgreSqlContext>(options => options.UseNpgsql(
         builder.Configuration.GetConnectionString("POSTGRESQLCONNSTR_PostgreSQL")
         ));
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+services.AddEndpointsApiExplorer();
+services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Cantina IBJ1", Version = "v1" });
 });
 
-builder.Services.AddMvcCore().AddAuthorization().AddDataAnnotations();
-builder.Services.AddMemoryCache();
-builder.Services.AddCors(c =>
+services.AddMvcCore().AddAuthorization().AddDataAnnotations();
+services.AddMemoryCache();
+services.AddCors(c =>
 {
     c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
-builder.Services.AddDistributedMemoryCache();
+services.AddDistributedMemoryCache();
 
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-//builder.Services.AddScoped<MapperProfile>();
-//builder.Services.AddScoped<IProductRepository, ProductRepository>();
-//builder.Services.AddScoped<IProviderRepository, ProviderRepository>();
+//Configura os Repositórios
+ServicesConfiguration.ConfigureRepositories(builder.Services);
 
 var app = builder.Build();
 
