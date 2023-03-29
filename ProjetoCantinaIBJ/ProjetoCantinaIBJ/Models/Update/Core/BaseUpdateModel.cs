@@ -2,7 +2,4 @@
 
 public class BaseUpdateModel
 {
-    public int Id { get; set; }
-
-    public bool IsDeleted { get; set; }
 }

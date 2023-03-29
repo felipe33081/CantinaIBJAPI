@@ -7,7 +7,6 @@ public class PostgreSqlContext : DbContext
 {
     public PostgreSqlContext(DbContextOptions<PostgreSqlContext> options) : base(options)
     {
-
     }
 
     public DbSet<CustomerPerson> CustomerPerson { get; set; }
