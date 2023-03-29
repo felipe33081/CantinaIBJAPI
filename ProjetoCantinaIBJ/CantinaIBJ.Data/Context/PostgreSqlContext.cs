@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using CantinaIBJ.Model.CustomerPerson;
+using Microsoft.EntityFrameworkCore;
 
 namespace CantinaIBJ.Data.Context;
 
@@ -9,4 +10,5 @@ public class PostgreSqlContext : DbContext
 
     }
 
+    public DbSet<CustomerPerson> CustomerPerson { get; set; }
 }

@@ -3,10 +3,10 @@ using System.ComponentModel.DataAnnotations;
 
 #nullable enable
 
-namespace CantinaIBJ.Model.Customer;
+namespace CantinaIBJ.Model.CustomerPerson;
 
 //Cliente - Comprador
-public class Customer : BaseModel
+public class CustomerPerson : BaseModel
 {
     [Required]
     public string Name { get; set; }
@@ -16,5 +16,7 @@ public class Customer : BaseModel
     [Required]
     public string Phone { get; set; }
 
-    public decimal? Balance { get; set; }
+    public decimal? DebitBalance { get; set; }
+
+    public decimal? CreditBalance { get; set; }
 }
