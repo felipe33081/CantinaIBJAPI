@@ -6,15 +6,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-//builder.Services.AddEntityFrameworkNpgsql()
-//    .AddDbContext<PostgreSqlContext>(options => options.UseNpgsql(
-//        builder.Configuration.GetConnectionString("POSTGRESQLCONNSTR_PostgreSQL")
-//        ));
+builder.Services.AddEntityFrameworkNpgsql()
+    .AddDbContext<PostgreSqlContext>(options => options.UseNpgsql(
+        builder.Configuration.GetConnectionString("POSTGRESQLCONNSTR_PostgreSQL")
+        ));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Cadastro de Produtos", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Cantina IBJ1", Version = "v1" });
 });
 
 builder.Services.AddMvcCore().AddAuthorization().AddDataAnnotations();
