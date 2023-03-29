@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CantinaIBJ.Data\CantinaIBJ.Data.csproj" />
+    <ProjectReference Include="..\CantinaIBJ.Model\CantinaIBJ.Model.csproj" />
   </ItemGroup>
 
 </Project>
