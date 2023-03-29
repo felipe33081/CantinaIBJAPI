@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33414.496
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CantinaIBJ.WebApi", "ProjetoCantinaIBJ\CantinaIBJ.WebApi.csproj", "{8B746F9F-433E-494D-98C8-679C8CBAD6C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CantinaIBJ.WebApi", "CantinaIBJ.WebApi\CantinaIBJ.WebApi.csproj", "{8B746F9F-433E-494D-98C8-679C8CBAD6C8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CantinaIBJ.Data", "CantinaIBJ.Data\CantinaIBJ.Data.csproj", "{577DD55A-7682-4CED-8FBE-B3C2FA0045D7}"
 EndProject
