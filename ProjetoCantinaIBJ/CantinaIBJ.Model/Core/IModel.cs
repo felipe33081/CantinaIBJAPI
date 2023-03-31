@@ -8,5 +8,5 @@ public interface IModel
 
     DateTimeOffset CreatedAt { get; set; }
 
-    DateTimeOffset UpdatedAt { get; set; }
+    DateTimeOffset? UpdatedAt { get; set; }
 }
