@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 #nullable enable
 
-namespace CantinaIBJ.Model.CustomerPerson;
+namespace CantinaIBJ.Model.Customer;
 
 //Cliente - Comprador
 public class CustomerPerson : BaseModel

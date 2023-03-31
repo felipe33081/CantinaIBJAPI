@@ -5,4 +5,8 @@ public interface IModel
     int Id { get; set; }
 
     bool IsDeleted { get; set; }
+
+    DateTimeOffset CreatedAt { get; set; }
+
+    DateTimeOffset? UpdatedAt { get; set; }
 }

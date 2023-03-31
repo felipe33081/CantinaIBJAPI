@@ -8,4 +8,8 @@ public class BaseModel : IModel
     public virtual int Id { get; set; }
 
     public virtual bool IsDeleted { get; set; } = false;
+    
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    public DateTimeOffset? UpdatedAt { get; set; }
 }

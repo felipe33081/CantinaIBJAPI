@@ -1,5 +1,5 @@
 ﻿using CantinaIBJ.Data.Contracts.Core;
-using CantinaIBJ.Model.CustomerPerson;
+using CantinaIBJ.Model.Customer;
 
 namespace CantinaIBJ.Data.Contracts.Customer;
 

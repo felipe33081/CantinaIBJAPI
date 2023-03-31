@@ -1,4 +1,6 @@
-﻿using CantinaIBJ.Data.Contracts.Customer;
+﻿using CantinaIBJ.Data.Contracts;
+using CantinaIBJ.Data.Contracts.Customer;
+using CantinaIBJ.Data.Repositories;
 using CantinaIBJ.Data.Repositories.Customer;
 using CantinaIBJ.WebApi.Models;
 
@@ -10,6 +12,8 @@ public static class ServicesConfiguration
     {
         services.AddScoped<MapperProfile>();
         services.AddScoped<ICustomerPersonRepository, CustomerPersonRepository>();
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IProductHistoricRepository, ProductHistoricRepository>();
 
         return services;
     }

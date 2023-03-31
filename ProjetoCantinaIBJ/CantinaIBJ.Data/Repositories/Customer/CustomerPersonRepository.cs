@@ -1,7 +1,7 @@
 ﻿using CantinaIBJ.Data.Context;
 using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Data.Repositories.Core;
-using CantinaIBJ.Model.CustomerPerson;
+using CantinaIBJ.Model.Customer;
 using Microsoft.EntityFrameworkCore;
 
 namespace CantinaIBJ.Data.Repositories.Customer;
