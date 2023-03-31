@@ -13,6 +13,7 @@ public static class ServicesConfiguration
         services.AddScoped<MapperProfile>();
         services.AddScoped<ICustomerPersonRepository, CustomerPersonRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IProductHistoricRepository, ProductHistoricRepository>();
 
         return services;
     }

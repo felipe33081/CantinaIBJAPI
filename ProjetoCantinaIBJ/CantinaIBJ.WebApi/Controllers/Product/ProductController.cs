@@ -15,17 +15,20 @@ namespace CantinaIBJ.WebApi.Controllers;
 public class ProductController : CoreController
 {
     readonly IProductRepository _productRepository;
+    readonly IProductHistoricRepository _productHistoricRepository;
     readonly IMapper _mapper;
     readonly ILogger<ProductController> _logger;
 
     public ProductController(
         IMapper mapper,
         ILogger<ProductController> logger,
-        IProductRepository productRepository)
+        IProductRepository productRepository,
+        IProductHistoricRepository productHistoricRepository)
     {
         _mapper = mapper;
         _logger = logger;
         _productRepository = productRepository;
+        _productHistoricRepository = productHistoricRepository;
     }
 
     /// <summary>
@@ -113,8 +116,20 @@ public class ProductController : CoreController
         {
             var product = await _productRepository.GetProductByIdAsync(id);
             _mapper.Map(updateModel, product);
-
+            product.UpdatedAt = DateTime.UtcNow;
             await _productRepository.SaveChangesAsync();
+
+            ProductHistoric productHistoric = new()
+            {
+                ProductId = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Quantity = product.Quantity,
+                Description = product.Description,
+                Diponibility = product.Diponibility,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _productHistoricRepository.AddProductHistoricAsync(productHistoric);
         }
         catch (Exception e)
         {

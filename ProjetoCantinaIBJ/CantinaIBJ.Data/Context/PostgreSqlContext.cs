@@ -12,6 +12,8 @@ public class PostgreSqlContext : DbContext
 
     public DbSet<CustomerPerson> CustomerPerson { get; set; }
     public DbSet<Product> Product { get; set; }
+    public DbSet<ProductHistoric> ProductHistoric { get; set; }
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
