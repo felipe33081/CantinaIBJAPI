@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using CantinaIBJ.Data.Contracts.Customer;
-using CantinaIBJ.Data.Repositories.Customer;
-using CantinaIBJ.Model.CustomerPerson;
+using CantinaIBJ.Model.Customer;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Models.Create.Customer;
 using CantinaIBJ.WebApi.Models.Read.Customer;

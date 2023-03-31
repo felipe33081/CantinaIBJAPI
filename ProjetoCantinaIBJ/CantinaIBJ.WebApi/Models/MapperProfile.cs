@@ -1,12 +1,16 @@
 ﻿using AutoMapper;
 using CantinaIBJ.Model.Core;
-using CantinaIBJ.Model.CustomerPerson;
+using CantinaIBJ.Model.Customer;
+using CantinaIBJ.Model.Product;
 using CantinaIBJ.WebApi.Models.Create.Core;
 using CantinaIBJ.WebApi.Models.Create.Customer;
+using CantinaIBJ.WebApi.Models.Create.Product;
 using CantinaIBJ.WebApi.Models.Read.Core;
 using CantinaIBJ.WebApi.Models.Read.Customer;
+using CantinaIBJ.WebApi.Models.Read.Product;
 using CantinaIBJ.WebApi.Models.Update.Core;
 using CantinaIBJ.WebApi.Models.Update.Customer;
+using CantinaIBJ.WebApi.Models.Update.Product;
 
 namespace CantinaIBJ.WebApi.Models;
 
@@ -25,6 +29,11 @@ public class MapperProfile : Profile
         CreateMap<CustomerPersonCreateModel, CustomerPerson>();
         CreateMap<CustomerPersonUpdateModel, CustomerPerson>();
         CreateMap<CustomerPerson, CustomerPersonReadModel>()
+            .IncludeBase<BaseModel, BaseReadModel>();
+
+        CreateMap<ProductCreateModel, Product>();
+        CreateMap<ProductUpdateModel, Product>();
+        CreateMap<Product, ProductReadModel>()
             .IncludeBase<BaseModel, BaseReadModel>();
     }
 }

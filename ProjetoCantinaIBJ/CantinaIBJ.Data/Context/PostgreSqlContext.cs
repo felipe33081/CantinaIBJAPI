@@ -1,4 +1,4 @@
-﻿using CantinaIBJ.Model.CustomerPerson;
+﻿using CantinaIBJ.Model.Customer;
 using Microsoft.EntityFrameworkCore;
 
 namespace CantinaIBJ.Data.Context;

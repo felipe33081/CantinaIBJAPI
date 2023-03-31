@@ -12,4 +12,8 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGenerators.Mvc" Version="6.0.13" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Enumerations\" />
+  </ItemGroup>
+
 </Project>
