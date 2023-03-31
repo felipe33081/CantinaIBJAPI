@@ -125,7 +125,6 @@ public class CustomerPersonController : CoreController
         return NoContent();
     }
 
-
     /// <summary>
     /// Exclui um registro de um cliente
     /// </summary>
