@@ -2,6 +2,7 @@
 using CantinaIBJ.Data.Contracts;
 using CantinaIBJ.Model.Product;
 using CantinaIBJ.WebApi.Controllers.Core;
+using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Models.Create.Product;
 using CantinaIBJ.WebApi.Models.Read.Product;
 using CantinaIBJ.WebApi.Models.Update.Product;
@@ -16,6 +17,7 @@ public class ProductController : CoreController
 {
     readonly IProductRepository _productRepository;
     readonly IProductHistoricRepository _productHistoricRepository;
+    readonly Mappers _mappers;
     readonly IMapper _mapper;
     readonly ILogger<ProductController> _logger;
 
@@ -23,12 +25,14 @@ public class ProductController : CoreController
         IMapper mapper,
         ILogger<ProductController> logger,
         IProductRepository productRepository,
-        IProductHistoricRepository productHistoricRepository)
+        IProductHistoricRepository productHistoricRepository,
+        Mappers mappers)
     {
         _mapper = mapper;
         _logger = logger;
         _productRepository = productRepository;
         _productHistoricRepository = productHistoricRepository;
+        _mappers = mappers;
     }
 
     /// <summary>
@@ -119,24 +123,14 @@ public class ProductController : CoreController
             product.UpdatedAt = DateTime.UtcNow;
             await _productRepository.SaveChangesAsync();
 
-            ProductHistoric productHistoric = new()
-            {
-                ProductId = product.Id,
-                Name = product.Name,
-                Price = product.Price,
-                Quantity = product.Quantity,
-                Description = product.Description,
-                Diponibility = product.Diponibility,
-                UpdatedAt = DateTime.UtcNow
-            };
-            await _productHistoricRepository.AddProductHistoricAsync(productHistoric);
+            await _mappers.ProductToProductHistoric(product);
+
+            return StatusCode(201, product);
         }
         catch (Exception e)
         {
             return LoggerBadRequest(e, _logger);
         }
-
-        return NoContent();
     }
 
     /// <summary>
