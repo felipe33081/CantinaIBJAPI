@@ -5,6 +5,7 @@ using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Models.Create.Customer;
 using CantinaIBJ.WebApi.Models.Read.Customer;
 using CantinaIBJ.WebApi.Models.Update.Customer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CantinaIBJ.WebApi.Controllers.Customer;
@@ -33,6 +34,7 @@ public class CustomerPersonController : CoreController
     /// </summary>
     /// <returns></returns>
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<IAsyncEnumerable<CustomerPersonReadModel>>> CustomerPersontListAsync()
     {
         try

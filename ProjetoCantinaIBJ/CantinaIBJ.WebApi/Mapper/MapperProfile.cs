@@ -12,7 +12,7 @@ using CantinaIBJ.WebApi.Models.Update.Core;
 using CantinaIBJ.WebApi.Models.Update.Customer;
 using CantinaIBJ.WebApi.Models.Update.Product;
 
-namespace CantinaIBJ.WebApi.Models;
+namespace CantinaIBJ.WebApi.Mapper;
 
 public class MapperProfile : Profile
 {

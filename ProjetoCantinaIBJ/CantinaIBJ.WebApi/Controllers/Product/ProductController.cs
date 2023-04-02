@@ -6,6 +6,7 @@ using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Models.Create.Product;
 using CantinaIBJ.WebApi.Models.Read.Product;
 using CantinaIBJ.WebApi.Models.Update.Product;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CantinaIBJ.WebApi.Controllers;
@@ -39,6 +40,7 @@ public class ProductController : CoreController
     /// Lista todos os produtos
     /// </summary>
     /// <returns></returns>
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<IAsyncEnumerable<ProductReadModel>>> ListAsync()
     {
