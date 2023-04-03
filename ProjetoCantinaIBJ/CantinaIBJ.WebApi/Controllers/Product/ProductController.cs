@@ -1,6 +1,10 @@
 ﻿using AutoMapper;
 using CantinaIBJ.Data.Contracts;
+using CantinaIBJ.Model;
+using CantinaIBJ.Model.Customer;
 using CantinaIBJ.Model.Product;
+using CantinaIBJ.Model.User;
+using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Models.Create.Product;
@@ -20,6 +24,7 @@ public class ProductController : CoreController
     readonly IProductHistoricRepository _productHistoricRepository;
     readonly Mappers _mappers;
     readonly IMapper _mapper;
+    readonly HttpUserContext _userContext;
     readonly ILogger<ProductController> _logger;
 
     public ProductController(
@@ -27,13 +32,15 @@ public class ProductController : CoreController
         ILogger<ProductController> logger,
         IProductRepository productRepository,
         IProductHistoricRepository productHistoricRepository,
-        Mappers mappers)
+        Mappers mappers,
+        HttpUserContext userContext)
     {
         _mapper = mapper;
         _logger = logger;
         _productRepository = productRepository;
         _productHistoricRepository = productHistoricRepository;
         _mappers = mappers;
+        _userContext = userContext;
     }
 
     /// <summary>
@@ -46,7 +53,9 @@ public class ProductController : CoreController
     {
         try
         {
-            var products = await _productRepository.GetProducts();
+            var user = _userContext.GetContextUser();
+
+            var products = await _productRepository.GetProducts(user);
 
             return Ok(products);
         }
@@ -62,12 +71,15 @@ public class ProductController : CoreController
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpGet("{id}")]
+    [Authorize]
     [ProducesResponseType(typeof(ProductReadModel), 200)]
     public async Task<IActionResult> GetById(int id)
     {
         try
         {
-            var product = await _productRepository.GetProductByIdAsync(id);
+            var user = _userContext.GetContextUser();
+
+            var product = await _productRepository.GetProductByIdAsync(user, id);
             if (product == null)
                 return NotFound("Produto não encontrado");
 
@@ -87,6 +99,7 @@ public class ProductController : CoreController
     /// <param name="model"></param>
     /// <returns></returns>
     [HttpPost]
+    [Authorize]
     [ProducesResponseType(typeof(Guid), 200)]
     public async Task<IActionResult> Create([FromBody] ProductCreateModel model)
     {
@@ -95,8 +108,10 @@ public class ProductController : CoreController
 
         try
         {
+            var user = _userContext.GetContextUser();
+
             var product = _mapper.Map<Product>(model);
-            await _productRepository.AddProductAsync(product);
+            await _productRepository.AddProductAsync(user, product);
 
             return Ok(product.Id);
         }
@@ -113,6 +128,7 @@ public class ProductController : CoreController
     /// <param name="updateModel"></param>
     /// <returns></returns>
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<IActionResult> Update(int id, [FromBody] ProductUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
@@ -120,12 +136,14 @@ public class ProductController : CoreController
 
         try
         {
-            var product = await _productRepository.GetProductByIdAsync(id);
+            var user = _userContext.GetContextUser();
+
+            var product = await _productRepository.GetProductByIdAsync(user, id);
             _mapper.Map(updateModel, product);
             product.UpdatedAt = DateTime.UtcNow;
-            await _productRepository.SaveChangesAsync();
+            await _productRepository.AddProductAsync(user, product);
 
-            await _mappers.ProductToProductHistoric(product);
+            await _mappers.ProductToProductHistoric(user, product);
 
             return StatusCode(201, product);
         }
@@ -141,15 +159,22 @@ public class ProductController : CoreController
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> Delete(int id)
     {
         try
         {
-            var product = await _productRepository.GetProductByIdAsync(id);
+            var user = _userContext.GetContextUser();
+
+            var product = await _productRepository.GetProductByIdAsync(user, id);
             if (product == null)
                 return NotFound("Produto não encontrado");
 
-            await _productRepository.DeleteAsync(product);
+            product.IsDeleted = true;
+            product.UpdatedAt = DateTime.Now;
+            product.UpdatedBy = user.GetCurrentUser();
+
+            await _productRepository.SaveChangesAsync();
 
             return NoContent();
         }

@@ -2,6 +2,7 @@
 using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Data.Repositories;
 using CantinaIBJ.Data.Repositories.Customer;
+using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Interfaces;
 using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Services;
@@ -15,6 +16,9 @@ public static class ServicesConfiguration
     {
         services.AddScoped<Mappers>();
         services.AddScoped<MapperProfile>();
+
+        services.AddScoped<HttpUserContext>();
+        services.AddHttpContextAccessor();
 
         //Jwt
         services.AddScoped<IJwtService, JwtService>();

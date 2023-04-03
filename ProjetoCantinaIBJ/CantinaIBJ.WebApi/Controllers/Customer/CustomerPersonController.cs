@@ -1,6 +1,9 @@
 ﻿using AutoMapper;
 using CantinaIBJ.Data.Contracts.Customer;
+using CantinaIBJ.Model;
 using CantinaIBJ.Model.Customer;
+using CantinaIBJ.Model.User;
+using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Models.Create.Customer;
 using CantinaIBJ.WebApi.Models.Read.Customer;
@@ -18,15 +21,18 @@ public class CustomerPersonController : CoreController
     readonly ICustomerPersonRepository _customerPersonRepository;
     readonly IMapper _mapper;
     readonly ILogger<CustomerPersonController> _logger;
+    readonly HttpUserContext _userContext;
 
     public CustomerPersonController(
         IMapper mapper,
         ILogger<CustomerPersonController> logger,
-        ICustomerPersonRepository customerPersonRepository)
+        ICustomerPersonRepository customerPersonRepository,
+        HttpUserContext userContext)
     {
         _mapper = mapper;
         _logger = logger;
         _customerPersonRepository = customerPersonRepository;
+        _userContext = userContext;
     }
 
     /// <summary>
@@ -39,7 +45,9 @@ public class CustomerPersonController : CoreController
     {
         try
         {
-            var customerPersons = await _customerPersonRepository.GetCustomerPersons();
+            var user = _userContext.GetContextUser();
+
+            var customerPersons = await _customerPersonRepository.GetCustomerPersons(user);
 
             return Ok(customerPersons);
         }
@@ -55,12 +63,15 @@ public class CustomerPersonController : CoreController
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpGet("{id}")]
+    [Authorize]
     [ProducesResponseType(typeof(CustomerPersonReadModel), 200)]
     public async Task<IActionResult> GetById(int id)
     {
         try
         {
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
+            var user = _userContext.GetContextUser();
+
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(user, id);
             if (customerPerson == null)
                 return NotFound("Produto não encontrado");
 
@@ -80,6 +91,7 @@ public class CustomerPersonController : CoreController
     /// <param name="model"></param>
     /// <returns></returns>
     [HttpPost]
+    [Authorize]
     [ProducesResponseType(typeof(Guid), 200)]
     public async Task<IActionResult> Create([FromBody] CustomerPersonCreateModel model)
     {
@@ -88,8 +100,10 @@ public class CustomerPersonController : CoreController
 
         try
         {
+            var user = _userContext.GetContextUser();
+
             var customerPerson = _mapper.Map<CustomerPerson>(model);
-            await _customerPersonRepository.AddCustomerPersonAsync(customerPerson);
+            await _customerPersonRepository.AddCustomerPersonAsync(user, customerPerson);
 
             return Ok(customerPerson.Id);
         }
@@ -106,6 +120,7 @@ public class CustomerPersonController : CoreController
     /// <param name="updateModel"></param>
     /// <returns></returns>
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<IActionResult> Update(int id, [FromBody] CustomerPersonUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
@@ -113,8 +128,13 @@ public class CustomerPersonController : CoreController
 
         try
         {
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
+            var user = _userContext.GetContextUser();
+
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(user, id);
             _mapper.Map(updateModel, customerPerson);
+
+            customerPerson.UpdatedAt = DateTime.Now;
+            customerPerson.UpdatedBy = user.GetCurrentUser();
 
             await _customerPersonRepository.SaveChangesAsync();
         }
@@ -132,15 +152,22 @@ public class CustomerPersonController : CoreController
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> Delete(int id)
     {
         try
         {
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
+            var user = _userContext.GetContextUser();
+
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(user, id);
             if (customerPerson == null)
                 return NotFound("Produto não encontrado");
 
-            await _customerPersonRepository.DeleteAsync(customerPerson);
+            customerPerson.IsDeleted = true;
+            customerPerson.UpdatedAt = DateTime.Now;
+            customerPerson.UpdatedBy = user.GetCurrentUser();
+
+            await _customerPersonRepository.SaveChangesAsync();
 
             return NoContent();
         }
