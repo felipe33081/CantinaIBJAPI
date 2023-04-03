@@ -2,11 +2,10 @@
 using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Data.Repositories;
 using CantinaIBJ.Data.Repositories.Customer;
-using CantinaIBJ.WebApi.Helpers;
+using CantinaIBJ.WebApi.Interfaces;
 using CantinaIBJ.WebApi.Mapper;
+using CantinaIBJ.WebApi.Services;
 using Microsoft.OpenApi.Models;
-using System.Reflection;
-using System.Xml.Linq;
 
 namespace CantinaIBJ.WebApi.Configurations;
 
@@ -16,6 +15,10 @@ public static class ServicesConfiguration
     {
         services.AddScoped<Mappers>();
         services.AddScoped<MapperProfile>();
+
+        //Jwt
+        services.AddScoped<IJwtService, JwtService>();
+
         services.AddScoped<ICustomerPersonRepository, CustomerPersonRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IProductHistoricRepository, ProductHistoricRepository>();
@@ -36,28 +39,6 @@ public static class ServicesConfiguration
                 {
                     Email = "felipenogueirap7@gmail.com",
                     Name = "Felipe Nogueira"
-                }
-            });
-            c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
-            {
-                Type = SecuritySchemeType.OAuth2,
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "oauth2" },
-                In = ParameterLocation.Header,
-                Flows = new OpenApiOAuthFlows
-                {
-                    Implicit = new OpenApiOAuthFlow
-                    {
-                        //AuthorizationUrl = new Uri("https://uy3ops.auth.us-east-2.amazoncognito.com/oauth2/authorize"),
-                        Scopes = new Dictionary<string, string>
-                            {
-                                {"admin", "Admin" },
-                                {"user", "User" },
-                                {"openid", "OpenId" },
-                                {"profile", "User Profile" },
-                                {"email", "User Email" },
-                            }
-                    },
-
                 }
             });
             c.AddSecurityDefinition("ApiKey",

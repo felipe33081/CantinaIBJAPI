@@ -1,37 +1,45 @@
 using CantinaIBJ.Data.Context;
 using CantinaIBJ.WebApi.Configurations;
+using CantinaIBJ.WebApi.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
 using System.Text;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
-using System.Security.Claims;
-using IdentityServer4.Models;
-using IdentityServer4.Test;
-using Microsoft.Extensions.DependencyInjection;
-using CantinaIBJ.WebApi.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 IServiceCollection services = builder.Services;
 
 // Add services to the container.
-services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new()
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"])),
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+// Configuração das políticas de autorização
+services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireClaim("admin"));
+    options.AddPolicy("UserOnly", policy => policy.RequireClaim("user"));
+});
 
 services.AddControllers();
 
@@ -40,35 +48,9 @@ services.AddEntityFrameworkNpgsql()
         builder.Configuration.GetConnectionString("POSTGRESQLCONNSTR_PostgreSQL")
         ));
 
-//services.AddIdentityServer()
-//            .AddInMemoryClients(new List<Client>() {
-//                new Client {
-//                    ClientId = "meu-cliente",
-//                    AllowedGrantTypes = GrantTypes.ClientCredentials,
-//                    ClientSecrets = { new Secret(builder.Configuration["IdentityServer:ClientSecret"].Sha256()) },
-//                    AllowedScopes = { "minha-api" }
-//                }
-//            })
-//            .AddInMemoryApiScopes(new List<ApiScope>() {
-//                new ApiScope("minha-api", "Minha API")
-//            })
-//            .AddInMemoryApiResources(new List<ApiResource>() {
-//                new ApiResource("minha-api", "Minha API")
-//            })
-//            .AddTestUsers(new List<TestUser>() {
-//                new TestUser {
-//                    SubjectId = "1",
-//                    Username = "alice",
-//                    Password = "alice",
-//                    Claims = {
-//                        new Claim("name", "Alice"),
-//                        new Claim("website", "https://alice.com")
-//                    }
-//                }
-//            });
-
 services.AddEndpointsApiExplorer();
 
+//Configura Swagger com autenticação Jwt
 services.ConfigureSwaggerGen();
 
 services.AddMvcCore()
@@ -125,9 +107,6 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// Configure o middleware de roteamento
-app.UseRouting();
-
 // Configure o middleware de pontos de extremidade
 //app.UseIdentityServer();
 
@@ -138,8 +117,14 @@ app.UseCors(policy =>
     policy.AllowAnyMethod();
 });
 
-app.UseAuthorization();
+// Adição do middleware de autenticação
 app.UseAuthentication();
+
+// Adição do middleware de roteamento do MVC
+app.UseRouting();
+
+// Adição do middleware de autorização
+app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
