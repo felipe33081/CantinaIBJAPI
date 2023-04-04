@@ -1,12 +1,12 @@
 ﻿using CantinaIBJ.Data.Contracts.Core;
+using CantinaIBJ.Model;
 using CantinaIBJ.Model.Customer;
-using CantinaIBJ.Model.User;
 
 namespace CantinaIBJ.Data.Contracts.Customer;
 
 public interface ICustomerPersonRepository : IRepositoryBase<CustomerPerson>
 {
-    Task<IEnumerable<CustomerPerson>> GetCustomerPersons(User user);
-    Task<CustomerPerson> GetCustomerPersonByIdAsync(User user, int id);
-    Task AddCustomerPersonAsync(User user, CustomerPerson customerPerson);
+    Task<IEnumerable<CustomerPerson>> GetCustomerPersons(UserContext user);
+    Task<CustomerPerson> GetCustomerPersonByIdAsync(UserContext user, int id);
+    Task AddCustomerPersonAsync(UserContext user, CustomerPerson customerPerson);
 }

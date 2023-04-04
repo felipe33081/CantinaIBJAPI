@@ -1,6 +1,6 @@
 ﻿using CantinaIBJ.Data.Contracts;
+using CantinaIBJ.Model;
 using CantinaIBJ.Model.Product;
-using CantinaIBJ.Model.User;
 
 namespace CantinaIBJ.WebApi.Mapper;
 
@@ -13,7 +13,7 @@ public class Mappers
         _productHistoricRepository = productHistoricRepository;
     }
 
-    public async Task ProductToProductHistoric(User user, Product product)
+    public async Task ProductToProductHistoric(UserContext user, Product product)
     {
         ProductHistoric productHistoric = new()
         {

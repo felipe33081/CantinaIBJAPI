@@ -1,18 +1,18 @@
-﻿using CantinaIBJ.Model.User;
+﻿using CantinaIBJ.Model;
 
 namespace CantinaIBJ.WebApi.Common;
 
 public class HttpUserContext
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private User _user;
+    private UserContext _user;
 
     public HttpUserContext(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public User GetContextUser()
+    public UserContext GetContextUser()
     {
         try
         {
@@ -25,12 +25,12 @@ public class HttpUserContext
 
             var claim = context?.User?.Identities?.FirstOrDefault()?.Claims;
 
-            User user = new();
+            UserContext user = new();
 #pragma warning disable CS8601 // Possible null reference assignment.
-            user.Name = claim?.FirstOrDefault(x => x.Type.Contains("nameidentifier"))?.Value;
+            user.Name = claim?.FirstOrDefault(x => x.Type.Contains("namei"))?.Value;
             user.Group = claim?.FirstOrDefault(c => c.Type.Contains("Group"))?.Value;
             user.Aud = claim?.FirstOrDefault(c => c.Type == "aud")?.Value;
-            user.PhoneNumber = claim?.FirstOrDefault(c => c.Type == "phonenumber")?.Value;
+            user.Email = claim?.FirstOrDefault(c => c.Type == "emailaddress")?.Value;
 
             user.TokenCreatedIn = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(claim?.FirstOrDefault(c => c.Type == "iat")?.Value));
             user.TokenExpiresIn = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(claim?.FirstOrDefault(c => c.Type == "exp")?.Value));

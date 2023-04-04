@@ -2,7 +2,6 @@
 using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Model;
 using CantinaIBJ.Model.Customer;
-using CantinaIBJ.Model.User;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Models.Create.Customer;

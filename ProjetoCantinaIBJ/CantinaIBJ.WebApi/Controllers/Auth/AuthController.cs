@@ -23,21 +23,20 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
         [HttpPost("getToken")]
         public IActionResult Login([FromBody] UserRequestModel request)
         {
-            if (request.Username == "admin" && request.Password == "1234")
+            if (user == null || !_userRepository.VerifyPassword(user, password))
             {
-                //Temporario @ToDo: AJUSTAr
-                List<Claim> claims = new();
-                Claim claim = new Claim("admin", "true");
-                Claim claim1 = new Claim("name", "felipe");
-                Claim claim2 = new Claim("group", "admin");
-                claims.Add(claim);
-                claims.Add(claim1);
-                claims.Add(claim2);
-
-                var token = _jwtService.GenerateToken("Júlio Ramos", claims, DateTime.UtcNow.AddHours(1));
-                return Ok(new { token });
+                return Unauthorized("Senha incorreta");
             }
-            return Unauthorized();
+            
+            var claims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.Name, user.Name),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Group, user.Group)
+            };
+
+            var token = _jwtService.GenerateToken(user.Id.ToString(), claims, DateTime.UtcNow.AddHours(3));
+            return Ok(new { token });
         }
 
         [HttpPost("ValidateTokenJwt")]
@@ -57,9 +56,9 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
         }
 
         //Teste para ver o retorno da autorização pelo token
-        [Authorize]
+        [Authorize(Policy.Admin)]
         [HttpGet("isAdmin")]
-        [ApiExplorerSettings(IgnoreApi = true)]
+        [ApiExplorerSettings(IgnoreApi = false)]
         public IActionResult Me()
         {
             var principal = HttpContext.User;

@@ -1,12 +1,12 @@
 ﻿using CantinaIBJ.Data.Contracts.Core;
+using CantinaIBJ.Model;
 using CantinaIBJ.Model.Product;
-using CantinaIBJ.Model.User;
 
 namespace CantinaIBJ.Data.Contracts;
 
 public interface IProductRepository : IRepositoryBase<Product>
 {
-    Task<IEnumerable<Product>> GetProducts(User user);
-    Task<Product> GetProductByIdAsync(User user, int id);
-    Task AddProductAsync(User user, Product product);
+    Task<IEnumerable<Product>> GetProducts(UserContext user);
+    Task<Product> GetProductByIdAsync(UserContext user, int id);
+    Task AddProductAsync(UserContext user, Product product);
 }

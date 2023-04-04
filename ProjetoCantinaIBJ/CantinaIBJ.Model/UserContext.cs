@@ -1,18 +1,18 @@
 ﻿using CantinaIBJ.Model.Core;
 
-namespace CantinaIBJ.Model.User;
+namespace CantinaIBJ.Model;
 
-public class User
+public class UserContext
 {
     #region [States]
     public int UserId { get; set; }
 
     public string Name { get; set; }
 
-    public string PhoneNumber { get; set; }
+    public string Email { get; set; }
 
     public string Aud { get; set; }
-    
+
     public string Group { get; set; }
 
     public DateTimeOffset? TokenCreatedIn { get; set; }

@@ -37,8 +37,10 @@ services.AddAuthentication(options =>
 // Configuração das políticas de autorização
 services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", policy => policy.RequireClaim("admin"));
-    options.AddPolicy("UserOnly", policy => policy.RequireClaim("user"));
+    options.AddPolicy("Admin", policy => policy.RequireClaim("admin"));
+    options.AddPolicy("User", policy => policy.RequireClaim("user"));
+    options.AddPolicy("All", policy => policy.RequireClaim("all"));
+    options.AddPolicy("Customer", policy => policy.RequireClaim("customer"));
 });
 
 services.AddControllers();
