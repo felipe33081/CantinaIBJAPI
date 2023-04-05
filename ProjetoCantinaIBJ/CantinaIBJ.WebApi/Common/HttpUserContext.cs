@@ -1,4 +1,5 @@
 ﻿using CantinaIBJ.Model;
+using System.Linq;
 
 namespace CantinaIBJ.WebApi.Common;
 
@@ -27,13 +28,18 @@ public class HttpUserContext
 
             UserContext user = new();
 #pragma warning disable CS8601 // Possible null reference assignment.
-            user.Name = claim?.FirstOrDefault(x => x.Type.Contains("namei"))?.Value;
-            user.Group = claim?.FirstOrDefault(c => c.Type.Contains("Group"))?.Value;
-            user.Aud = claim?.FirstOrDefault(c => c.Type == "aud")?.Value;
+            user.UserId = claim?.FirstOrDefault(x => x.Type.Contains("role"))?.Value;
+            user.Name = claim?.FirstOrDefault(x => x.Type.Contains("nameidentifier"))?.Value;
             user.Email = claim?.FirstOrDefault(c => c.Type == "emailaddress")?.Value;
+            user.Group = claim?.FirstOrDefault(c => c.Type.EndsWith("admin") && c.Value == "true") != null ? "admin" :
+              claim?.FirstOrDefault(c => c.Type.EndsWith("user") && c.Value == "true") != null ? "user" :
+              null;
+            user.Aud = claim?.FirstOrDefault(c => c.Type == "aud")?.Value;
 
             user.TokenCreatedIn = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(claim?.FirstOrDefault(c => c.Type == "iat")?.Value));
             user.TokenExpiresIn = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(claim?.FirstOrDefault(c => c.Type == "exp")?.Value));
+            if (user.TokenExpiresIn < DateTimeOffset.UtcNow)
+                throw new Exception("Token expirado");
 #pragma warning restore CS8601 // Possible null reference assignment.
 
             _user = user;

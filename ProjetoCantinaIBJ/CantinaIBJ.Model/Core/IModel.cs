@@ -11,6 +11,4 @@ public interface IModel
 
     string CreatedBy { get; set; }
     string? UpdatedBy { get; set; }
-
-    string? Group { get; set;}
 }

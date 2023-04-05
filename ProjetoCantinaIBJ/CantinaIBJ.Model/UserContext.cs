@@ -5,7 +5,7 @@ namespace CantinaIBJ.Model;
 public class UserContext
 {
     #region [States]
-    public int UserId { get; set; }
+    public string UserId { get; set; }
 
     public string Name { get; set; }
 

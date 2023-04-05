@@ -1,5 +1,6 @@
 ﻿using CantinaIBJ.Model.Customer;
 using CantinaIBJ.Model.Product;
+using CantinaIBJ.Model.User;
 using Microsoft.EntityFrameworkCore;
 
 namespace CantinaIBJ.Data.Context;
@@ -13,7 +14,7 @@ public class PostgreSqlContext : DbContext
     public DbSet<CustomerPerson> CustomerPerson { get; set; }
     public DbSet<Product> Product { get; set; }
     public DbSet<ProductHistoric> ProductHistoric { get; set; }
-
+    public DbSet<User> User { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

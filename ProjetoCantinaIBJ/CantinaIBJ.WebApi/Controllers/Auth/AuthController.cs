@@ -1,4 +1,7 @@
-﻿using CantinaIBJ.WebApi.Interfaces;
+﻿using CantinaIBJ.Data.Contracts;
+using CantinaIBJ.Model.Enumerations;
+using CantinaIBJ.WebApi.Common;
+using CantinaIBJ.WebApi.Interfaces;
 using CantinaIBJ.WebApi.Models;
 using CantinaIBJ.WebApi.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -13,29 +16,56 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
     public class AuthController : ControllerBase
     {
         private readonly IJwtService _jwtService;
+        private readonly HttpUserContext _userContext;
+        private readonly IUserRepository _userRepository;
 
-        public AuthController(IJwtService jwtService)
+        public AuthController(IJwtService jwtService, 
+            IUserRepository userRepository, 
+            HttpUserContext userContext)
         {
             _jwtService = jwtService;
+            _userRepository = userRepository;
+            _userContext = userContext;
         }
 
         [AllowAnonymous]
         [HttpPost("getToken")]
-        public IActionResult Login([FromBody] UserRequestModel request)
+        [ApiExplorerSettings(IgnoreApi = false)]
+        public async Task<IActionResult> Login([FromBody] UserRequestModel request)
         {
-            if (user == null || !_userRepository.VerifyPassword(user, password))
+            var user = await _userRepository.GetUserByUsernameAsync(request.Username);
+            List<Claim> claims = new();
+
+            if (user == null || !_userRepository.VerifyPassword(user, request.Password))
             {
                 return Unauthorized("Senha incorreta");
             }
             
-            var claims = new List<Claim>()
+            switch (user.Group)
             {
-                new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Group, user.Group)
-            };
+                case Groups.Admin:
+                    claims = new List<Claim>()
+                    {
+                        new Claim("role", user.Id.ToString()),
+                        new Claim("emailaddress", user.Email),
+                        new Claim("admin", "true"),
+                        new Claim("user", "true")
+                    };
+                    break;
+                case Groups.User:
+                    claims = new List<Claim>()
+                    {
+                        new Claim("role", user.Id.ToString()),
+                        new Claim("emailaddress", user.Email),
+                        new Claim("user", "true")
+                    };
+                    break;
+                default:
+                    return Unauthorized();
+            }
 
-            var token = _jwtService.GenerateToken(user.Id.ToString(), claims, DateTime.UtcNow.AddHours(3));
+            var token = _jwtService.GenerateToken(user.Name, claims, DateTime.UtcNow.AddDays(1));
+
             return Ok(new { token });
         }
 
@@ -58,9 +88,10 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
         //Teste para ver o retorno da autorização pelo token
         [Authorize(Policy.Admin)]
         [HttpGet("isAdmin")]
-        [ApiExplorerSettings(IgnoreApi = false)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IActionResult Me()
         {
+            var contextUser = _userContext.GetContextUser();
             var principal = HttpContext.User;
             var claim = HttpContext.User?.Identities?.FirstOrDefault()?.Claims;
             var username = claim?.FirstOrDefault(x => x.Type.Contains("nameidentifier"))?.Value;

@@ -6,7 +6,7 @@ namespace CantinaIBJ.Data.Contracts;
 
 public interface IProductHistoricRepository : IRepositoryBase<ProductHistoric>
 {
-    Task<IEnumerable<ProductHistoric>> GetProductHistorics(UserContext user);
-    Task<ProductHistoric> GetProductHistoricByIdAsync(UserContext user, int id);
-    Task AddProductHistoricAsync(UserContext user, ProductHistoric productHistoric);
+    Task<IEnumerable<ProductHistoric>> GetProductHistorics(UserContext contextUser); 
+    Task<ProductHistoric> GetProductHistoricByIdAsync(UserContext contextUser, int id); 
+    Task AddProductHistoricAsync(UserContext contextUser, ProductHistoric productHistoric);
 }

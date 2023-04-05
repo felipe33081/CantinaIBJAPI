@@ -6,7 +6,7 @@ namespace CantinaIBJ.Data.Contracts;
 
 public interface IProductRepository : IRepositoryBase<Product>
 {
-    Task<IEnumerable<Product>> GetProducts(UserContext user);
-    Task<Product> GetProductByIdAsync(UserContext user, int id);
-    Task AddProductAsync(UserContext user, Product product);
+    Task<IEnumerable<Product>> GetProducts(UserContext contextUser);
+    Task<Product> GetProductByIdAsync(UserContext contextUser, int id);
+    Task AddProductAsync(UserContext contextUser, Product product);
 }
