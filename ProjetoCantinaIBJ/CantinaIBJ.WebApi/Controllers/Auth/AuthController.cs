@@ -38,7 +38,7 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
 
             if (user == null || !_userRepository.VerifyPassword(user, request.Password))
             {
-                return Unauthorized("Senha incorreta");
+                return Unauthorized("Login e/ou Senha incorreto(a)s, tente novamente.");
             }
             
             switch (user.Group)
