@@ -1,6 +1,5 @@
 using CantinaIBJ.Data.Context;
 using CantinaIBJ.WebApi.Configurations;
-using CantinaIBJ.WebApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -39,8 +38,6 @@ services.AddAuthorization(options =>
 {
     options.AddPolicy("Admin", policy => policy.RequireClaim("admin"));
     options.AddPolicy("User", policy => policy.RequireClaim("user"));
-    options.AddPolicy("All", policy => policy.RequireClaim("all"));
-    options.AddPolicy("Customer", policy => policy.RequireClaim("customer"));
 });
 
 services.AddControllers();

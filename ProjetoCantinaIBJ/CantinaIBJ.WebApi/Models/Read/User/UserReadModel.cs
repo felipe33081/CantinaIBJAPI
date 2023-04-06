@@ -1,4 +1,5 @@
-﻿using CantinaIBJ.WebApi.Models.Read.Core;
+﻿using CantinaIBJ.Model.Enumerations;
+using CantinaIBJ.WebApi.Models.Read.Core;
 
 namespace CantinaIBJ.WebApi.Models.Read.User;
 
@@ -20,12 +21,7 @@ public class UserReadModel : BaseReadModel
     public string Username { get; set; }
 
     /// <summary>
-    /// Senha do usuário
-    /// </summary>
-    public string PasswordHash { get; set; }
-
-    /// <summary>
     /// Grupo do usuário
     /// </summary>
-    public string Group { get; set; }
+    public Groups Group { get; set; }
 }

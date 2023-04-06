@@ -73,7 +73,7 @@ public class ProductController : CoreController
     [HttpGet("{id}")]
     [Authorize(Policy.User)]
     [ProducesResponseType(typeof(ProductReadModel), 200)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById([FromRoute] int id)
     {
         try
         {
@@ -129,7 +129,7 @@ public class ProductController : CoreController
     /// <returns></returns>
     [HttpPut("{id}")]
     [Authorize(Policy.Admin)]
-    public async Task<IActionResult> Update(int id, [FromBody] ProductUpdateModel updateModel)
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProductUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
             return NotFound("Modelo não é válido");
@@ -160,7 +160,7 @@ public class ProductController : CoreController
     /// <returns></returns>
     [HttpDelete("{id}")]
     [Authorize(Policy.Admin)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {

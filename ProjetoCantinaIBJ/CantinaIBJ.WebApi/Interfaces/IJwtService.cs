@@ -4,7 +4,7 @@ namespace CantinaIBJ.WebApi.Interfaces;
 
 public interface IJwtService
 {
-    string GenerateToken(string subject, IEnumerable<Claim> claims, DateTime expires);
+    string GenerateToken(string subject, IEnumerable<Claim> claims);
 
     ClaimsPrincipal ValidateToken(string token);
 }

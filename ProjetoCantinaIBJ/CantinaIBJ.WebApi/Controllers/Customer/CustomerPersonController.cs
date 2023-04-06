@@ -65,7 +65,7 @@ public class CustomerPersonController : CoreController
     [HttpGet("{id}")]
     [Authorize(Policy.User)]
     [ProducesResponseType(typeof(CustomerPersonReadModel), 200)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById([FromRoute] int id)
     {
         try
         {
@@ -121,7 +121,8 @@ public class CustomerPersonController : CoreController
     /// <returns></returns>
     [HttpPut("{id}")]
     [Authorize(Policy.User)]
-    public async Task<IActionResult> Update(int id, [FromBody] CustomerPersonUpdateModel updateModel)
+    public async Task<IActionResult> Update([FromRoute] int id, 
+                                            [FromBody] CustomerPersonUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
             return NotFound("Modelo não é válido");
@@ -153,7 +154,7 @@ public class CustomerPersonController : CoreController
     /// <returns></returns>
     [HttpDelete("{id}")]
     [Authorize(Policy.Admin)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {

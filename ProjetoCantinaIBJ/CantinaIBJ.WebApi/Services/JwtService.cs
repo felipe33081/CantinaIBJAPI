@@ -17,13 +17,13 @@ public class JwtService : IJwtService
         _configuration = configuration;
     }
 
-    public string GenerateToken(string subject, IEnumerable<Claim> claims, DateTime expires)
+    public string GenerateToken(string subject, IEnumerable<Claim> claims)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(new[] { new Claim(JwtRegisteredClaimNames.Sub, subject) }.Union(claims)),
-            Expires = expires,
+            Expires = DateTime.UtcNow.AddHours(Convert.ToDouble(_configuration["Jwt:ExpiresInHours"])),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["Jwt:Key"])), SecurityAlgorithms.HmacSha256Signature),
             Issuer = _configuration["Jwt:Issuer"],
             Audience = _configuration["Jwt:Audience"]
@@ -43,8 +43,9 @@ public class JwtService : IJwtService
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["Jwt:Key"])),
                 ValidateIssuer = true,
+                ValidateAudience = true,
                 ValidIssuer = _configuration["Jwt:Issuer"],
-                ValidateAudience = false,
+                ValidAudience = _configuration["Jwt:Audience"],
                 ValidateLifetime = true
             }, out var validatedToken);
 

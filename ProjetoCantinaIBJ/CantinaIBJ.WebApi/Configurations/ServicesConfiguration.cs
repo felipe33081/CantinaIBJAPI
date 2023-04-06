@@ -7,6 +7,8 @@ using CantinaIBJ.WebApi.Interfaces;
 using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Services;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
+using System.Xml.Linq;
 
 namespace CantinaIBJ.WebApi.Configurations;
 
@@ -85,21 +87,11 @@ public static class ServicesConfiguration
                 });
             c.UseOneOfForPolymorphism();
 
-            //var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            //var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            //c.IncludeXmlComments(xmlPath);
-            //c.SchemaFilter<DescribeEnumMembers>(XDocument.Load(xmlPath));
-            //c.SchemaFilter<IgnoreEnumSchemaFilter>(XDocument.Load(xmlPath));
-
-            //xmlPath = Path.Combine(AppContext.BaseDirectory, "Risk.Integration.xml");
-            //c.IncludeXmlComments(xmlPath);
-            //c.SchemaFilter<DescribeEnumMembers>(XDocument.Load(xmlPath));
-            //c.SchemaFilter<IgnoreEnumSchemaFilter>(XDocument.Load(xmlPath));
-
-            //xmlPath = Path.Combine(AppContext.BaseDirectory, "Risk.Model.xml");
-            //c.IncludeXmlComments(xmlPath);
-            //c.SchemaFilter<DescribeEnumMembers>(XDocument.Load(xmlPath));
-            //c.SchemaFilter<IgnoreEnumSchemaFilter>(XDocument.Load(xmlPath));
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            c.IncludeXmlComments(xmlPath);
+            c.SchemaFilter<DescribeEnumMembers>(XDocument.Load(xmlPath));
+            c.SchemaFilter<IgnoreEnumSchemaFilter>(XDocument.Load(xmlPath));
         });
     }
 }

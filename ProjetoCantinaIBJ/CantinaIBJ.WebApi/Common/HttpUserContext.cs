@@ -28,7 +28,7 @@ public class HttpUserContext
 
             UserContext user = new();
 #pragma warning disable CS8601 // Possible null reference assignment.
-            user.UserId = claim?.FirstOrDefault(x => x.Type.Contains("role"))?.Value;
+            user.UserId = claim?.FirstOrDefault(x => x.Type.Contains("userid"))?.Value;
             user.Name = claim?.FirstOrDefault(x => x.Type.Contains("nameidentifier"))?.Value;
             user.Email = claim?.FirstOrDefault(c => c.Type == "emailaddress")?.Value;
             user.Group = claim?.FirstOrDefault(c => c.Type.EndsWith("admin") && c.Value == "true") != null ? "admin" :
