@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CantinaIBJ.WebApi", "Cantin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CantinaIBJ.Data", "CantinaIBJ.Data\CantinaIBJ.Data.csproj", "{577DD55A-7682-4CED-8FBE-B3C2FA0045D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CantinaIBJ.Model", "CantinaIBJ.Model\CantinaIBJ.Model.csproj", "{DFF19A18-50FA-4B4D-B4A5-8D55FA4E3202}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CantinaIBJ.Model", "CantinaIBJ.Model\CantinaIBJ.Model.csproj", "{DFF19A18-50FA-4B4D-B4A5-8D55FA4E3202}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

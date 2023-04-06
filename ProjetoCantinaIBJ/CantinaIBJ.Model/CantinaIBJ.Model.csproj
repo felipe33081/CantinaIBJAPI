@@ -14,10 +14,11 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Contracts" Version="5.0.2" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.13" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGenerators.Mvc" Version="6.0.13" />
+    <PackageReference Include="ServiceStack.Interfaces" Version="6.8.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Enumerations\" />
+    <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 
 </Project>

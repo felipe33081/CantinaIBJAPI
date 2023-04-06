@@ -1,11 +1,16 @@
 ﻿using AutoMapper;
 using CantinaIBJ.Data.Contracts;
+using CantinaIBJ.Model;
+using CantinaIBJ.Model.Customer;
 using CantinaIBJ.Model.Product;
+using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Models.Create.Product;
 using CantinaIBJ.WebApi.Models.Read.Product;
 using CantinaIBJ.WebApi.Models.Update.Product;
+using CantinaIBJ.WebApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CantinaIBJ.WebApi.Controllers;
@@ -19,6 +24,7 @@ public class ProductController : CoreController
     readonly IProductHistoricRepository _productHistoricRepository;
     readonly Mappers _mappers;
     readonly IMapper _mapper;
+    readonly HttpUserContext _userContext;
     readonly ILogger<ProductController> _logger;
 
     public ProductController(
@@ -26,13 +32,15 @@ public class ProductController : CoreController
         ILogger<ProductController> logger,
         IProductRepository productRepository,
         IProductHistoricRepository productHistoricRepository,
-        Mappers mappers)
+        Mappers mappers,
+        HttpUserContext userContext)
     {
         _mapper = mapper;
         _logger = logger;
         _productRepository = productRepository;
         _productHistoricRepository = productHistoricRepository;
         _mappers = mappers;
+        _userContext = userContext;
     }
 
     /// <summary>
@@ -40,11 +48,14 @@ public class ProductController : CoreController
     /// </summary>
     /// <returns></returns>
     [HttpGet]
+    [Authorize(Policy.User)]
     public async Task<ActionResult<IAsyncEnumerable<ProductReadModel>>> ListAsync()
     {
         try
         {
-            var products = await _productRepository.GetProducts();
+            var contextUser = _userContext.GetContextUser();
+
+            var products = await _productRepository.GetProducts(contextUser);
 
             return Ok(products);
         }
@@ -60,12 +71,15 @@ public class ProductController : CoreController
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpGet("{id}")]
+    [Authorize(Policy.User)]
     [ProducesResponseType(typeof(ProductReadModel), 200)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById([FromRoute] int id)
     {
         try
         {
-            var product = await _productRepository.GetProductByIdAsync(id);
+            var contextUser = _userContext.GetContextUser();
+
+            var product = await _productRepository.GetProductByIdAsync(contextUser, id);
             if (product == null)
                 return NotFound("Produto não encontrado");
 
@@ -85,6 +99,7 @@ public class ProductController : CoreController
     /// <param name="model"></param>
     /// <returns></returns>
     [HttpPost]
+    [Authorize(Policy.Admin)]
     [ProducesResponseType(typeof(Guid), 200)]
     public async Task<IActionResult> Create([FromBody] ProductCreateModel model)
     {
@@ -93,8 +108,10 @@ public class ProductController : CoreController
 
         try
         {
+            var contextUser = _userContext.GetContextUser();
+
             var product = _mapper.Map<Product>(model);
-            await _productRepository.AddProductAsync(product);
+            await _productRepository.AddProductAsync(contextUser, product);
 
             return Ok(product.Id);
         }
@@ -111,19 +128,22 @@ public class ProductController : CoreController
     /// <param name="updateModel"></param>
     /// <returns></returns>
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] ProductUpdateModel updateModel)
+    [Authorize(Policy.Admin)]
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProductUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
             return NotFound("Modelo não é válido");
 
         try
         {
-            var product = await _productRepository.GetProductByIdAsync(id);
+            var contextUser = _userContext.GetContextUser();
+
+            var product = await _productRepository.GetProductByIdAsync(contextUser, id);
             _mapper.Map(updateModel, product);
             product.UpdatedAt = DateTime.UtcNow;
-            await _productRepository.SaveChangesAsync();
+            await _productRepository.AddProductAsync(contextUser, product);
 
-            await _mappers.ProductToProductHistoric(product);
+            await _mappers.ProductToProductHistoric(contextUser, product);
 
             return StatusCode(201, product);
         }
@@ -139,15 +159,22 @@ public class ProductController : CoreController
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    [Authorize(Policy.Admin)]
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {
-            var product = await _productRepository.GetProductByIdAsync(id);
+            var contextUser = _userContext.GetContextUser();
+
+            var product = await _productRepository.GetProductByIdAsync(contextUser, id);
             if (product == null)
                 return NotFound("Produto não encontrado");
 
-            await _productRepository.DeleteAsync(product);
+            product.IsDeleted = true;
+            product.UpdatedAt = DateTime.Now;
+            product.UpdatedBy = contextUser.GetCurrentUser();
+
+            await _productRepository.SaveChangesAsync();
 
             return NoContent();
         }
@@ -155,21 +182,5 @@ public class ProductController : CoreController
         {
             return LoggerBadRequest(e, _logger);
         }
-    }
-
-    private async Task<bool> PersonExists(int id)
-    {
-        try
-        {
-            var product = await _productRepository.ListAsync();
-            var hasProduct = product.Any(x => x.Id == id);
-
-            return hasProduct;
-        }
-        catch (Exception e)
-        {
-            throw e;
-        }
-
     }
 }

@@ -1,6 +1,7 @@
 ﻿using CantinaIBJ.Data.Context;
 using CantinaIBJ.Data.Contracts;
 using CantinaIBJ.Data.Repositories.Core;
+using CantinaIBJ.Model;
 using CantinaIBJ.Model.Product;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,20 +14,23 @@ public class ProductHistoricRepository : RepositoryBase<ProductHistoric>, IProdu
 
     }
 
-    public async Task<IEnumerable<ProductHistoric>> GetProductHistorics()
+    public async Task<IEnumerable<ProductHistoric>> GetProductHistorics(UserContext contextUser)
     {
         return await Context.ProductHistoric.ToListAsync();
     }
 
-    public async Task<ProductHistoric> GetProductHistoricByIdAsync(int id)
+    public async Task<ProductHistoric> GetProductHistoricByIdAsync(UserContext contextUser, int id)
     {
         return await Context.ProductHistoric
             .SingleOrDefaultAsync(x => x.Id == id);
     }
 
-    public async Task AddProductHistoricAsync(ProductHistoric ProductHistoric)
+    public async Task AddProductHistoricAsync(UserContext contextUser, ProductHistoric productHistoric)
     {
-        await Context.AddAsync(ProductHistoric);
+        productHistoric.CreatedBy = contextUser.GetCurrentUser();
+        productHistoric.UpdatedBy = contextUser.GetCurrentUser();
+
+        await Context.AddAsync(productHistoric);
         await Context.SaveChangesAsync();
     }
 }

@@ -1,10 +1,14 @@
 ﻿using AutoMapper;
 using CantinaIBJ.Data.Contracts.Customer;
+using CantinaIBJ.Model;
 using CantinaIBJ.Model.Customer;
+using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Models.Create.Customer;
 using CantinaIBJ.WebApi.Models.Read.Customer;
 using CantinaIBJ.WebApi.Models.Update.Customer;
+using CantinaIBJ.WebApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CantinaIBJ.WebApi.Controllers.Customer;
@@ -17,15 +21,18 @@ public class CustomerPersonController : CoreController
     readonly ICustomerPersonRepository _customerPersonRepository;
     readonly IMapper _mapper;
     readonly ILogger<CustomerPersonController> _logger;
+    readonly HttpUserContext _userContext;
 
     public CustomerPersonController(
         IMapper mapper,
         ILogger<CustomerPersonController> logger,
-        ICustomerPersonRepository customerPersonRepository)
+        ICustomerPersonRepository customerPersonRepository,
+        HttpUserContext userContext)
     {
         _mapper = mapper;
         _logger = logger;
         _customerPersonRepository = customerPersonRepository;
+        _userContext = userContext;
     }
 
     /// <summary>
@@ -33,11 +40,14 @@ public class CustomerPersonController : CoreController
     /// </summary>
     /// <returns></returns>
     [HttpGet]
+    [Authorize(Policy.User)]
     public async Task<ActionResult<IAsyncEnumerable<CustomerPersonReadModel>>> CustomerPersontListAsync()
     {
         try
         {
-            var customerPersons = await _customerPersonRepository.GetCustomerPersons();
+            var contextUser = _userContext.GetContextUser();
+
+            var customerPersons = await _customerPersonRepository.GetCustomerPersons(contextUser);
 
             return Ok(customerPersons);
         }
@@ -53,14 +63,17 @@ public class CustomerPersonController : CoreController
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpGet("{id}")]
+    [Authorize(Policy.User)]
     [ProducesResponseType(typeof(CustomerPersonReadModel), 200)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById([FromRoute] int id)
     {
         try
         {
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
+            var contextUser = _userContext.GetContextUser();
+
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
             if (customerPerson == null)
-                return NotFound("Produto não encontrado");
+                return NotFound("Cliente não encontrado");
 
             var readCustomerPerson = _mapper.Map<CustomerPersonReadModel>(customerPerson);
 
@@ -78,6 +91,7 @@ public class CustomerPersonController : CoreController
     /// <param name="model"></param>
     /// <returns></returns>
     [HttpPost]
+    [Authorize(Policy.User)]
     [ProducesResponseType(typeof(Guid), 200)]
     public async Task<IActionResult> Create([FromBody] CustomerPersonCreateModel model)
     {
@@ -86,8 +100,10 @@ public class CustomerPersonController : CoreController
 
         try
         {
+            var contextUser = _userContext.GetContextUser();
+
             var customerPerson = _mapper.Map<CustomerPerson>(model);
-            await _customerPersonRepository.AddCustomerPersonAsync(customerPerson);
+            await _customerPersonRepository.AddCustomerPersonAsync(contextUser, customerPerson);
 
             return Ok(customerPerson.Id);
         }
@@ -104,15 +120,22 @@ public class CustomerPersonController : CoreController
     /// <param name="updateModel"></param>
     /// <returns></returns>
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] CustomerPersonUpdateModel updateModel)
+    [Authorize(Policy.User)]
+    public async Task<IActionResult> Update([FromRoute] int id, 
+                                            [FromBody] CustomerPersonUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
             return NotFound("Modelo não é válido");
 
         try
         {
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
+            var contextUser = _userContext.GetContextUser();
+
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
             _mapper.Map(updateModel, customerPerson);
+
+            customerPerson.UpdatedAt = DateTime.Now;
+            customerPerson.UpdatedBy = contextUser.GetCurrentUser();
 
             await _customerPersonRepository.SaveChangesAsync();
         }
@@ -130,15 +153,22 @@ public class CustomerPersonController : CoreController
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    [Authorize(Policy.Admin)]
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
-            if (customerPerson == null)
-                return NotFound("Produto não encontrado");
+            var contextUser = _userContext.GetContextUser();
 
-            await _customerPersonRepository.DeleteAsync(customerPerson);
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
+            if (customerPerson == null)
+                return NotFound("Cliente não encontrado");
+
+            customerPerson.IsDeleted = true;
+            customerPerson.UpdatedAt = DateTime.Now;
+            customerPerson.UpdatedBy = contextUser.GetCurrentUser();
+
+            await _customerPersonRepository.SaveChangesAsync();
 
             return NoContent();
         }
@@ -146,21 +176,5 @@ public class CustomerPersonController : CoreController
         {
             return LoggerBadRequest(e, _logger);
         }
-    }
-
-    private async Task<bool> PersonExists(int id)
-    {
-        try
-        {
-            var customerPerson = await _customerPersonRepository.ListAsync();
-            var hasCustomerPerson = customerPerson.Any(x => x.Id == id);
-
-            return hasCustomerPerson;
-        }
-        catch (Exception e)
-        {
-            throw e;
-        }
-
     }
 }

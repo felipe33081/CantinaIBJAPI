@@ -1,14 +1,45 @@
 using CantinaIBJ.Data.Context;
 using CantinaIBJ.WebApi.Configurations;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
+using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 IServiceCollection services = builder.Services;
 
 // Add services to the container.
+services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"])),
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+// Configuração das políticas de autorização
+services.AddAuthorization(options =>
+{
+    options.AddPolicy("Admin", policy => policy.RequireClaim("admin"));
+    options.AddPolicy("User", policy => policy.RequireClaim("user"));
+});
+
 services.AddControllers();
 
 services.AddEntityFrameworkNpgsql()
@@ -17,10 +48,9 @@ services.AddEntityFrameworkNpgsql()
         ));
 
 services.AddEndpointsApiExplorer();
-services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Cantina IBJ1", Version = "v1" });
-});
+
+//Configura Swagger com autenticação Jwt
+services.ConfigureSwaggerGen();
 
 services.AddMvcCore()
     .AddAuthorization()
@@ -46,8 +76,15 @@ cultureInfo.NumberFormat.CurrencySymbol = "R$";
 CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
 CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
-app.UseSwaggerUI();
-app.UseSwagger(x => x.SerializeAsV2 = true);
+app.UseSwagger(x =>
+{
+    x.RouteTemplate = "docs/{documentName}/docs.json";
+});
+app.UseSwaggerUI(o =>
+{
+    o.RoutePrefix = "docs";
+    o.SwaggerEndpoint("/docs/v1/docs.json", "Cantina IBJ");
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -69,7 +106,9 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-app.UseRouting();
+// Configure o middleware de pontos de extremidade
+//app.UseIdentityServer();
+
 app.UseCors(policy =>
 {
     policy.AllowAnyOrigin();
@@ -77,8 +116,14 @@ app.UseCors(policy =>
     policy.AllowAnyMethod();
 });
 
-app.UseAuthorization();
+// Adição do middleware de autenticação
 app.UseAuthentication();
+
+// Adição do middleware de roteamento do MVC
+app.UseRouting();
+
+// Adição do middleware de autorização
+app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",

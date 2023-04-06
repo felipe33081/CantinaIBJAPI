@@ -1,6 +1,7 @@
 ﻿using CantinaIBJ.Data.Context;
 using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Data.Repositories.Core;
+using CantinaIBJ.Model;
 using CantinaIBJ.Model.Customer;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,20 +14,23 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
 
     }
 
-    public async Task<IEnumerable<CustomerPerson>> GetCustomerPersons()
+    public async Task<IEnumerable<CustomerPerson>> GetCustomerPersons(UserContext user)
     {
         return await Context.CustomerPerson.ToListAsync();
     }
 
-    public async Task<CustomerPerson> GetCustomerPersonByIdAsync(int id)
+    public async Task<CustomerPerson> GetCustomerPersonByIdAsync(UserContext user, int id)
     {
         return await Context.CustomerPerson
             .SingleOrDefaultAsync(x => x.Id == id);
     }
 
-    public async Task AddCustomerPersonAsync(CustomerPerson CustomerPerson)
+    public async Task AddCustomerPersonAsync(UserContext user, CustomerPerson customerPerson)
     {
-        await Context.AddAsync(CustomerPerson);
+        customerPerson.CreatedBy = user.GetCurrentUser();
+        customerPerson.UpdatedBy = user.GetCurrentUser();
+
+        await Context.AddAsync(customerPerson);
         await Context.SaveChangesAsync();
     }
 }
