@@ -6,14 +6,16 @@ using CantinaIBJ.Model;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using Microsoft.Extensions.Configuration;
 
 namespace CantinaIBJ.Data.Repositories;
 
 public class UserRepository : RepositoryBase<User>, IUserRepository
 {
-    public UserRepository(PostgreSqlContext context) : base(context)
+    private readonly IConfiguration _configuration;
+    public UserRepository(PostgreSqlContext context, IConfiguration configuration) : base(context)
     {
-
+        _configuration = configuration;
     }
 
     public async Task<IEnumerable<User>> GetUsers(UserContext contextUser)
@@ -58,7 +60,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
 
     private string HashPassword(string password)
     {
-        var salt = Encoding.UTF8.GetBytes("dsadSDAEWEeira!@#@!!123sDSDsadas");
+        var salt = Encoding.UTF8.GetBytes(_configuration["HashPassword:Key"]);
         var hash = KeyDerivation.Pbkdf2(
             password: password,
             salt: salt,

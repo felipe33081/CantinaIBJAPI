@@ -1,7 +1,7 @@
 ﻿using CantinaIBJ.Model.Core;
 using Microsoft.Build.Framework;
 
-namespace CantinaIBJ.Model.Product;
+namespace CantinaIBJ.Model;
 
 public class Product : BaseModel
 {

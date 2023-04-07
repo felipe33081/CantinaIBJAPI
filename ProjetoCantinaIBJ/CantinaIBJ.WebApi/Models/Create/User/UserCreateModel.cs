@@ -39,5 +39,5 @@ public class UserCreateModel : BaseCreateModel
     /// Grupo do usuário
     /// </summary>
     [Required(ErrorMessage = "O campo {0} é obrigatório")]
-    public Groups Group { get; set; }
+    public UserGroups Group { get; set; }
 }

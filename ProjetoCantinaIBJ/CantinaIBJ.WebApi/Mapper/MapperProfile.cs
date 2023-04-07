@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
+using CantinaIBJ.Model;
 using CantinaIBJ.Model.Core;
 using CantinaIBJ.Model.Customer;
-using CantinaIBJ.Model.Product;
 using CantinaIBJ.Model.User;
 using CantinaIBJ.WebApi.Models.Create.Core;
 using CantinaIBJ.WebApi.Models.Create.Customer;

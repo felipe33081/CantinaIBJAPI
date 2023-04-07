@@ -1,6 +1,5 @@
 ﻿using CantinaIBJ.Data.Contracts.Core;
 using CantinaIBJ.Model;
-using CantinaIBJ.Model.Product;
 
 namespace CantinaIBJ.Data.Contracts;
 

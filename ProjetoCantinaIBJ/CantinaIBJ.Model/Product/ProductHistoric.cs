@@ -1,6 +1,6 @@
 ﻿using CantinaIBJ.Model.Core;
 
-namespace CantinaIBJ.Model.Product;
+namespace CantinaIBJ.Model;
 
 public class ProductHistoric : BaseModel
 {

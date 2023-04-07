@@ -1,5 +1,5 @@
 ﻿using CantinaIBJ.Model.Customer;
-using CantinaIBJ.Model.Product;
+using CantinaIBJ.Model;
 using CantinaIBJ.Model.User;
 using Microsoft.EntityFrameworkCore;
 

@@ -1,6 +1,5 @@
 ﻿using CantinaIBJ.Data.Contracts;
 using CantinaIBJ.Model;
-using CantinaIBJ.Model.Product;
 
 namespace CantinaIBJ.WebApi.Mapper;
 

@@ -2,7 +2,6 @@
 using CantinaIBJ.Data.Contracts;
 using CantinaIBJ.Data.Repositories.Core;
 using CantinaIBJ.Model;
-using CantinaIBJ.Model.Product;
 using Microsoft.EntityFrameworkCore;
 
 namespace CantinaIBJ.Data.Repositories;

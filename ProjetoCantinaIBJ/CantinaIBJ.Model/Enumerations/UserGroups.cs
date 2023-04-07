@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CantinaIBJ.Model.Enumerations
 {
-    public enum Groups
+    public enum UserGroups
     {
         [Description("admin")]
         Admin,

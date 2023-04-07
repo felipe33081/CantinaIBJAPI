@@ -49,7 +49,7 @@ public class AuthController : ControllerBase
             
         switch (user.Group)
         {
-            case Groups.Admin:
+            case UserGroups.Admin:
                 claims = new List<Claim>()
                 {
                     new Claim("userid", user.Id.ToString()),
@@ -58,7 +58,7 @@ public class AuthController : ControllerBase
                     new Claim("user", "true")
                 };
                 break;
-            case Groups.User:
+            case UserGroups.User:
                 claims = new List<Claim>()
                 {
                     new Claim("role", user.Id.ToString()),
