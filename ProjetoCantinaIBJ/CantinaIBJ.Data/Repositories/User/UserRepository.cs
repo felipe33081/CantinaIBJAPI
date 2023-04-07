@@ -18,7 +18,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         _configuration = configuration;
     }
 
-    public async Task<IEnumerable<User>> GetUsers(UserContext contextUser)
+    public async Task<List<User>> GetUsers(UserContext contextUser)
     {
         return await Context.User.ToListAsync();
     }

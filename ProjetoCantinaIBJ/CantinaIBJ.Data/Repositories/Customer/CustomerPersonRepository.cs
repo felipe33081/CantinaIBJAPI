@@ -14,7 +14,7 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
 
     }
 
-    public async Task<IEnumerable<CustomerPerson>> GetCustomerPersons(UserContext user)
+    public async Task<List<CustomerPerson>> GetCustomerPersons(UserContext user)
     {
         return await Context.CustomerPerson.ToListAsync();
     }

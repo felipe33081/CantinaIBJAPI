@@ -13,7 +13,7 @@ public class ProductHistoricRepository : RepositoryBase<ProductHistoric>, IProdu
 
     }
 
-    public async Task<IEnumerable<ProductHistoric>> GetProductHistorics(UserContext contextUser)
+    public async Task<List<ProductHistoric>> GetProductHistorics(UserContext contextUser)
     {
         return await Context.ProductHistoric.ToListAsync();
     }

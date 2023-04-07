@@ -13,7 +13,7 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
 
     }
 
-    public async Task<IEnumerable<Product>> GetProducts(UserContext contextUser)
+    public async Task<List<Product>> GetProducts(UserContext contextUser)
     {
         return await Context.Product.ToListAsync();
     }
