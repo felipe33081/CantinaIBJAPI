@@ -137,9 +137,13 @@ public class ProductController : CoreController
             var contextUser = _userContext.GetContextUser();
 
             var product = await _productRepository.GetProductByIdAsync(contextUser, id);
-            _mapper.Map(updateModel, product);
+
+            product = _mapper.Map<Product>(updateModel);
+
             product.UpdatedAt = DateTime.UtcNow;
-            await _productRepository.AddProductAsync(contextUser, product);
+            product.UpdatedBy = contextUser.GetCurrentUser();
+
+            await _productRepository.UpdateAsync(product);
 
             await _mappers.ProductToProductHistoric(contextUser, product);
 
@@ -172,7 +176,7 @@ public class ProductController : CoreController
             product.UpdatedAt = DateTime.Now;
             product.UpdatedBy = contextUser.GetCurrentUser();
 
-            await _productRepository.SaveChangesAsync();
+            await _productRepository.UpdateAsync(product);
 
             return NoContent();
         }

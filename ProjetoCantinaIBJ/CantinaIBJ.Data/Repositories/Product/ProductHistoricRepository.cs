@@ -27,7 +27,6 @@ public class ProductHistoricRepository : RepositoryBase<ProductHistoric>, IProdu
     public async Task AddProductHistoricAsync(UserContext contextUser, ProductHistoric productHistoric)
     {
         productHistoric.CreatedBy = contextUser.GetCurrentUser();
-        productHistoric.UpdatedBy = contextUser.GetCurrentUser();
 
         await Context.AddAsync(productHistoric);
         await Context.SaveChangesAsync();

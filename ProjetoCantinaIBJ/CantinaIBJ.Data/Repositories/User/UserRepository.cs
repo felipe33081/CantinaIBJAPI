@@ -41,7 +41,6 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
 
         user.PasswordHash = passwordHash;
         user.CreatedBy = contextUser.GetCurrentUser();
-        user.UpdatedBy = contextUser.GetCurrentUser();
 
         await Context.AddAsync(user);
         await Context.SaveChangesAsync();

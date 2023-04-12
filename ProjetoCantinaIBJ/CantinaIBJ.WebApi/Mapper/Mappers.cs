@@ -22,7 +22,8 @@ public class Mappers
             Quantity = product.Quantity,
             Description = product.Description,
             Diponibility = product.Diponibility,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            UpdatedBy = user.GetCurrentUser()
         };
         await _productHistoricRepository.AddProductHistoricAsync(user, productHistoric);
     }

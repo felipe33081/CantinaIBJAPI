@@ -18,4 +18,6 @@ public class Product : BaseModel
 
     [Required]
     public bool Diponibility { get; set; }
+
+    public List<OrderProduct> OrdersProducts { get; set; }
 }

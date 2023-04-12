@@ -158,15 +158,15 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
             {
                 var contextUser = _userContext.GetContextUser();
 
-                var User = await _userRepository.GetUserByIdAsync(contextUser, id);
-                if (User == null)
+                var user = await _userRepository.GetUserByIdAsync(contextUser, id);
+                if (user == null)
                     return NotFound("Usuário não encontrado");
 
-                User.IsDeleted = true;
-                User.UpdatedAt = DateTime.Now;
-                User.UpdatedBy = contextUser.GetCurrentUser();
+                user.IsDeleted = true;
+                user.UpdatedAt = DateTime.Now;
+                user.UpdatedBy = contextUser.GetCurrentUser();
 
-                await _userRepository.SaveChangesAsync();
+                await _userRepository.UpdateAsync(user);
 
                 return NoContent();
             }

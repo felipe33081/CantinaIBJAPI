@@ -27,7 +27,6 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
     public async Task AddProductAsync(UserContext contextUser, Product product)
     {
         product.CreatedBy = contextUser.GetCurrentUser();
-        product.UpdatedBy = contextUser.GetCurrentUser();
 
         await Context.AddAsync(product);
         await Context.SaveChangesAsync();

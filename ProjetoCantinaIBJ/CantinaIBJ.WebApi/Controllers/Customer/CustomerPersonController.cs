@@ -132,12 +132,13 @@ public class CustomerPersonController : CoreController
             var contextUser = _userContext.GetContextUser();
 
             var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
-            _mapper.Map(updateModel, customerPerson);
+            
+            customerPerson = _mapper.Map<CustomerPerson>(updateModel);
 
             customerPerson.UpdatedAt = DateTime.Now;
             customerPerson.UpdatedBy = contextUser.GetCurrentUser();
 
-            await _customerPersonRepository.SaveChangesAsync();
+            await _customerPersonRepository.UpdateAsync(customerPerson);
         }
         catch (Exception e)
         {
@@ -168,7 +169,7 @@ public class CustomerPersonController : CoreController
             customerPerson.UpdatedAt = DateTime.Now;
             customerPerson.UpdatedBy = contextUser.GetCurrentUser();
 
-            await _customerPersonRepository.SaveChangesAsync();
+            await _customerPersonRepository.UpdateAsync(customerPerson);
 
             return NoContent();
         }

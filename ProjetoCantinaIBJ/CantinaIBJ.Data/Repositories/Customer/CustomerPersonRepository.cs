@@ -28,7 +28,6 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
     public async Task AddCustomerPersonAsync(UserContext user, CustomerPerson customerPerson)
     {
         customerPerson.CreatedBy = user.GetCurrentUser();
-        customerPerson.UpdatedBy = user.GetCurrentUser();
 
         await Context.AddAsync(customerPerson);
         await Context.SaveChangesAsync();
