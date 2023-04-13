@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
 using CantinaIBJ.Data.Contracts;
+using CantinaIBJ.Model.Customer;
+using CantinaIBJ.Model;
 using CantinaIBJ.Model.User;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Models.Create.User;
+using CantinaIBJ.WebApi.Models.Read.Customer;
 using CantinaIBJ.WebApi.Models.Read.User;
 using CantinaIBJ.WebApi.Models.Update.User;
 using CantinaIBJ.WebApi.Services;
@@ -35,20 +38,29 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
         }
 
         /// <summary>
-        /// Lista todos os usuários
+        /// Lista todos os clientes
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        [Authorize(Policy.Admin)]
-        public async Task<ActionResult<IAsyncEnumerable<UserReadModel>>> UsertListAsync()
+        [Authorize(Policy.User)]
+        public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
+            [FromQuery] string? searchString = null)
         {
             try
             {
                 var contextUser = _userContext.GetContextUser();
 
-                var users = await _userRepository.GetUsers(contextUser);
+                ListDataPagination<User> listData = await _userRepository.GetListUsers(contextUser, searchString, page, size);
 
-                return Ok(users);
+                var newData = new ListDataPagination<UserReadModel>
+                {
+                    Data = listData.Data.Select(c => _mapper.Map<UserReadModel>(c)).ToList(),
+                    Page = page,
+                    TotalItems = listData.TotalItems,
+                    TotalPages = listData.TotalPages
+                };
+
+                return Ok(newData);
             }
             catch (Exception e)
             {
@@ -130,19 +142,21 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
                 var contextUser = _userContext.GetContextUser();
 
                 var user = await _userRepository.GetUserByIdAsync(contextUser, id);
+
                 _mapper.Map(updateModel, user);
 
                 user.UpdatedAt = DateTime.Now;
                 user.UpdatedBy = contextUser.GetCurrentUser();
 
                 await _userRepository.UpdateUserAsync(contextUser, user);
+
+                return NoContent();
             }
             catch (Exception e)
             {
                 return LoggerBadRequest(e, _logger);
             }
 
-            return NoContent();
         }
 
         /// <summary>
@@ -158,15 +172,15 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
             {
                 var contextUser = _userContext.GetContextUser();
 
-                var User = await _userRepository.GetUserByIdAsync(contextUser, id);
-                if (User == null)
+                var user = await _userRepository.GetUserByIdAsync(contextUser, id);
+                if (user == null)
                     return NotFound("Usuário não encontrado");
 
-                User.IsDeleted = true;
-                User.UpdatedAt = DateTime.Now;
-                User.UpdatedBy = contextUser.GetCurrentUser();
+                user.IsDeleted = true;
+                user.UpdatedAt = DateTime.Now;
+                user.UpdatedBy = contextUser.GetCurrentUser();
 
-                await _userRepository.SaveChangesAsync();
+                await _userRepository.UpdateAsync(user);
 
                 return NoContent();
             }

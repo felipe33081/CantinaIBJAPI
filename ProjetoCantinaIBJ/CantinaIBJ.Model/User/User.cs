@@ -16,5 +16,5 @@ public class User : BaseModel
     [Unique]
     public string PasswordHash { get; set; }
 
-    public Groups Group { get; set; }
+    public UserGroups Group { get; set; }
 }

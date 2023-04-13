@@ -1,6 +1,5 @@
 ﻿using CantinaIBJ.Data.Contracts;
 using CantinaIBJ.Model;
-using CantinaIBJ.Model.Product;
 
 namespace CantinaIBJ.WebApi.Mapper;
 
@@ -23,7 +22,8 @@ public class Mappers
             Quantity = product.Quantity,
             Description = product.Description,
             Diponibility = product.Diponibility,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            UpdatedBy = user.GetCurrentUser()
         };
         await _productHistoricRepository.AddProductHistoricAsync(user, productHistoric);
     }

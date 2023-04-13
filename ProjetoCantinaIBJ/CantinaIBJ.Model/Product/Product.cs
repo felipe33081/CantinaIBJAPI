@@ -1,7 +1,7 @@
 ﻿using CantinaIBJ.Model.Core;
 using Microsoft.Build.Framework;
 
-namespace CantinaIBJ.Model.Product;
+namespace CantinaIBJ.Model;
 
 public class Product : BaseModel
 {
@@ -18,4 +18,6 @@ public class Product : BaseModel
 
     [Required]
     public bool Diponibility { get; set; }
+
+    public List<OrderProduct> OrdersProducts { get; set; }
 }

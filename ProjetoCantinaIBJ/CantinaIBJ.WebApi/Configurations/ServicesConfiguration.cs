@@ -3,6 +3,7 @@ using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Data.Repositories;
 using CantinaIBJ.Data.Repositories.Customer;
 using CantinaIBJ.WebApi.Common;
+using CantinaIBJ.WebApi.Helpers;
 using CantinaIBJ.WebApi.Interfaces;
 using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Services;
@@ -22,12 +23,15 @@ public static class ServicesConfiguration
         services.AddScoped<HttpUserContext>();
         services.AddHttpContextAccessor();
 
+        services.AddScoped<OrderHelper>();
+
         //Jwt
         services.AddScoped<IJwtService, JwtService>();
 
         services.AddScoped<ICustomerPersonRepository, CustomerPersonRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IProductHistoricRepository, ProductHistoricRepository>();
 
         return services;

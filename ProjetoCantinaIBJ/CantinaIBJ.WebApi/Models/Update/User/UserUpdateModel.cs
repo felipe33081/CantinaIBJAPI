@@ -27,5 +27,5 @@ public class UserUpdateModel : BaseUpdateModel
     /// <summary>
     /// Grupo do usuário
     /// </summary>
-    public Groups Group { get; set; }
+    public UserGroups Group { get; set; }
 }
