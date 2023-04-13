@@ -32,6 +32,16 @@ public class OrderReadModel : BaseReadModel
     public decimal TotalValue { get; set; }
 
     /// <summary>
+    /// Valor de pagamento do cliente
+    /// </summary>
+    public decimal? PaymentValue { get; set; }
+
+    /// <summary>
+    /// Valor de troco a ser repassado ao cliente
+    /// </summary>
+    public decimal? ChangeValue { get; set; }
+
+    /// <summary>
     /// Status do pedido
     /// </summary>
     public OrderStatus Status { get; set; }

@@ -14,15 +14,44 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
 
     }
 
-    public async Task<List<CustomerPerson>> GetCustomerPersons(UserContext user)
+    public async Task<ListDataPagination<CustomerPerson>> GetListCustomerPersons(UserContext contextUser,
+        string searchString,
+        int page,
+        int size)
     {
-        return await Context.CustomerPerson.ToListAsync();
+        var query = Context.CustomerPerson
+            .Where(x => x.IsDeleted == false);
+
+        if (!string.IsNullOrEmpty(searchString))
+        {
+            searchString = searchString.ToLower().Trim();
+            query = query.Where(q => q.Name.ToLower().Contains(searchString) ||
+            q.Email.ToLower().Contains(searchString) ||
+            q.Phone.ToLower().Contains(searchString));
+        }
+
+        var data = new ListDataPagination<CustomerPerson>
+        {
+            Page = page,
+            TotalItems = await query.CountAsync()
+        };
+        data.TotalPages = (int)Math.Ceiling((double)data.TotalItems / size);
+
+        data.Data = await query.Skip(size * page)
+            .Take(size)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return data;
     }
 
     public async Task<CustomerPerson> GetCustomerPersonByIdAsync(UserContext user, int id)
     {
-        return await Context.CustomerPerson
+        var query = await Context.CustomerPerson
+            .Where(x => x.IsDeleted == false)
             .SingleOrDefaultAsync(x => x.Id == id);
+
+        return query;
     }
 
     public async Task AddCustomerPersonAsync(UserContext user, CustomerPerson customerPerson)

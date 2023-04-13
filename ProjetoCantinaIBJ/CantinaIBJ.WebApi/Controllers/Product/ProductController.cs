@@ -1,10 +1,13 @@
 ﻿using AutoMapper;
 using CantinaIBJ.Data.Contracts;
+using CantinaIBJ.Data.Repositories;
 using CantinaIBJ.Model;
+using CantinaIBJ.Model.Orders;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Models.Create.Product;
+using CantinaIBJ.WebApi.Models.Read.Order;
 using CantinaIBJ.WebApi.Models.Read.Product;
 using CantinaIBJ.WebApi.Models.Update.Product;
 using CantinaIBJ.WebApi.Services;
@@ -47,15 +50,24 @@ public class ProductController : CoreController
     /// <returns></returns>
     [HttpGet]
     [Authorize(Policy.User)]
-    public async Task<ActionResult<IAsyncEnumerable<ProductReadModel>>> ListAsync()
+    public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
+        [FromQuery] string? searchString = null)
     {
         try
         {
             var contextUser = _userContext.GetContextUser();
 
-            var products = await _productRepository.GetProducts(contextUser);
+            ListDataPagination<Product> listData = await _productRepository.GetListProducts(contextUser, searchString, page, size);
 
-            return Ok(products);
+            var newData = new ListDataPagination<ProductReadModel>
+            {
+                Data = listData.Data.Select(c => _mapper.Map<ProductReadModel>(c)).ToList(),
+                Page = page,
+                TotalItems = listData.TotalItems,
+                TotalPages = listData.TotalPages
+            };
+
+            return Ok(newData);
         }
         catch (Exception e)
         {
@@ -138,7 +150,7 @@ public class ProductController : CoreController
 
             var product = await _productRepository.GetProductByIdAsync(contextUser, id);
 
-            product = _mapper.Map<Product>(updateModel);
+            _mapper.Map(updateModel, product);
 
             product.UpdatedAt = DateTime.UtcNow;
             product.UpdatedBy = contextUser.GetCurrentUser();
@@ -147,7 +159,7 @@ public class ProductController : CoreController
 
             await _mappers.ProductToProductHistoric(contextUser, product);
 
-            return StatusCode(201, product);
+            return NoContent();
         }
         catch (Exception e)
         {

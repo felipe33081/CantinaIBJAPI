@@ -16,6 +16,6 @@ public enum PaymentOfType
 
     [Description("Fiado")]
     Debitor = 4,
-    [Description("Dinheiro a mais (Crédito na conta)")]
+    [Description("Crédito na conta")]
     ExtraMoney =5
 }

@@ -1,9 +1,13 @@
 ﻿using AutoMapper;
 using CantinaIBJ.Data.Contracts;
+using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Model;
+using CantinaIBJ.Model.Customer;
+using CantinaIBJ.Model.Enumerations;
 using CantinaIBJ.Model.Orders;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
+using CantinaIBJ.WebApi.Helpers;
 using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Models.Create.Order;
 using CantinaIBJ.WebApi.Models.Read.Order;
@@ -21,6 +25,8 @@ namespace CantinaIBJ.WebApi.Controllers;
 public class OrderController : CoreController
 {
     readonly IOrderRepository _orderRepository;
+    readonly ICustomerPersonRepository _customerPersonRepository;
+    readonly OrderHelper _orderHelper;
     readonly Mappers _mappers;
     readonly IMapper _mapper;
     readonly HttpUserContext _userContext;
@@ -31,13 +37,17 @@ public class OrderController : CoreController
         ILogger<OrderController> logger,
         IOrderRepository orderRepository,
         Mappers mappers,
-        HttpUserContext userContext)
+        HttpUserContext userContext,
+        ICustomerPersonRepository customerPersonRepository,
+        OrderHelper orderHelper)
     {
         _mapper = mapper;
         _logger = logger;
         _orderRepository = orderRepository;
         _mappers = mappers;
         _userContext = userContext;
+        _customerPersonRepository = customerPersonRepository;
+        _orderHelper = orderHelper;
     }
 
     /// <summary>
@@ -46,15 +56,24 @@ public class OrderController : CoreController
     /// <returns></returns>
     [HttpGet]
     [Authorize(Policy.User)]
-    public async Task<ActionResult<IAsyncEnumerable<OrderReadModel>>> ListAsync()
+    public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
+        [FromQuery] string? customerName = null)
     {
         try
         {
             var contextUser = _userContext.GetContextUser();
 
-            var orders = await _orderRepository.GetOrders(contextUser);
+            ListDataPagination<Order> listData = await _orderRepository.GetListOrders(contextUser, customerName, page, size);
 
-            return Ok(orders);
+            var newData = new ListDataPagination<OrderReadModel>
+            {
+                Data = listData.Data.Select(c => _mapper.Map<OrderReadModel>(c)).ToList(),
+                Page = page,
+                TotalItems = listData.TotalItems,
+                TotalPages = listData.TotalPages
+            };
+
+            return Ok(newData);
         }
         catch (Exception e)
         {
@@ -107,17 +126,17 @@ public class OrderController : CoreController
         {
             var contextUser = _userContext.GetContextUser();
 
-            //TODO: Verificar se foi preenchido o tipo de pagamento já na criação, se sim, validar os passos abaixo:
-            //TODO: criar validações pro Status do pedido, caso o usuario/vendedor tenha atualizado o status para "Encerrado"(verificar o tipo de pagamento se foi avista, pix, ou ficou devendo, para
-            //atualizar também o debitBalance ou creditBalando do cliente, caso o cliente tenha cadastro) e retornar o endpoint com status code 201
-            //Se o Status for Cancelado, cria com status de cancelado
+            CustomerPerson? customerPerson = null;
 
             //validação para ver se foi preenchido id de um cliente pré-cadastrado, ou se preencheu o nome do cliente, ou um ou outro, dar exceção se nao preencher nenhum
             if (model.CustomerPersonId == null && string.IsNullOrEmpty(model.CustomerName))
                 BadRequest("Informar um cliente Pré-Cadastrado, Se não cadastro, informar somente o nome do cliente");
 
             var order = _mapper.Map<Order>(model);
-            
+
+            if (order.CustomerPersonId != null && order.CustomerPersonId > 0)
+                customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, order.CustomerPersonId.Value);
+
             //faz a soma do preço dos itens com a quantidade, e atualizar no valor total do pedido
             decimal productsValues = 0;
             foreach (var product in order.Products)
@@ -155,13 +174,17 @@ public class OrderController : CoreController
         {
             var contextUser = _userContext.GetContextUser();
 
-            //TODO: criar validações pro Status do pedido, caso o usuario/vendedor tenha atualizado o status para "Encerrado"(verificar o tipo de pagamento se foi avista, pix, ou ficou devendo, para
-            //atualizar também o debitBalance ou creditBalando do cliente, caso o cliente tenha cadastro) e retornar o endpoint com status code 201
-            //Se o Status for Cancelado, exclui
-
-
             var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
-            order = _mapper.Map<Order>(updateModel);
+
+            CustomerPerson? customerPerson = null;
+
+            if (order.CustomerPersonId != null && order.CustomerPersonId > 0)
+                customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, order.CustomerPersonId.Value);
+
+            if (updateModel.Status == OrderStatus.Finished && updateModel.PaymentValue == null && updateModel.PaymentOfType == null)
+                BadRequest("Se for finalizar o pedido, é obrigatório informar o valor do pagamento e ");
+
+            _mapper.Map(updateModel, order);
 
             //faz a soma do preço dos itens com a quantidade, e atualizar no valor total do pedido
             decimal productsValues = 0;
@@ -173,12 +196,10 @@ public class OrderController : CoreController
 
             order.TotalValue = productsValues;
 
-            order.UpdatedAt = DateTime.UtcNow;
-            order.UpdatedBy = contextUser.GetCurrentUser();
-
-            await _orderRepository.UpdateAsync(order);
-
-            return StatusCode(201, order);
+            //Helper para verificar status e forma de pagamento, para fazer os cálculos devidos
+            await _orderHelper.UpdateCalculatePaymentsOrder(contextUser, order, customerPerson);
+            
+            return NoContent();
         }
         catch (Exception e)
         {
@@ -204,6 +225,7 @@ public class OrderController : CoreController
                 return NotFound("Pedido não encontrado");
 
             order.IsDeleted = true;
+            order.Status = OrderStatus.Excluded;
             order.UpdatedAt = DateTime.Now;
             order.UpdatedBy = contextUser.GetCurrentUser();
 

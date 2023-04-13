@@ -2,10 +2,12 @@
 using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Model;
 using CantinaIBJ.Model.Customer;
+using CantinaIBJ.Model.Orders;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Models.Create.Customer;
 using CantinaIBJ.WebApi.Models.Read.Customer;
+using CantinaIBJ.WebApi.Models.Read.Product;
 using CantinaIBJ.WebApi.Models.Update.Customer;
 using CantinaIBJ.WebApi.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -41,15 +43,24 @@ public class CustomerPersonController : CoreController
     /// <returns></returns>
     [HttpGet]
     [Authorize(Policy.User)]
-    public async Task<ActionResult<IAsyncEnumerable<CustomerPersonReadModel>>> CustomerPersontListAsync()
+    public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
+        [FromQuery] string? searchString = null)
     {
         try
         {
             var contextUser = _userContext.GetContextUser();
 
-            var customerPersons = await _customerPersonRepository.GetCustomerPersons(contextUser);
+            ListDataPagination<CustomerPerson> listData = await _customerPersonRepository.GetListCustomerPersons(contextUser, searchString, page, size);
 
-            return Ok(customerPersons);
+            var newData = new ListDataPagination<CustomerPersonReadModel>
+            {
+                Data = listData.Data.Select(c => _mapper.Map<CustomerPersonReadModel>(c)).ToList(),
+                Page = page,
+                TotalItems = listData.TotalItems,
+                TotalPages = listData.TotalPages
+            };
+
+            return Ok(newData);
         }
         catch (Exception e)
         {
@@ -132,20 +143,20 @@ public class CustomerPersonController : CoreController
             var contextUser = _userContext.GetContextUser();
 
             var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
-            
-            customerPerson = _mapper.Map<CustomerPerson>(updateModel);
+
+            _mapper.Map(updateModel, customerPerson);
 
             customerPerson.UpdatedAt = DateTime.Now;
             customerPerson.UpdatedBy = contextUser.GetCurrentUser();
 
             await _customerPersonRepository.UpdateAsync(customerPerson);
+
+            return NoContent();
         }
         catch (Exception e)
         {
             return LoggerBadRequest(e, _logger);
         }
-
-        return NoContent();
     }
 
     /// <summary>

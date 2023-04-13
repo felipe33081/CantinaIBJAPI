@@ -24,9 +24,4 @@ public class OrderCreateModel : BaseCreateModel
     /// </summary>
     [Required(ErrorMessage = "Produto é obrigatório")]
     public List<OrderProductCreateModel> Products { get; set; }
-
-    /// <summary>
-    /// Tipo de pagamento
-    /// </summary>
-    public PaymentOfType? PaymentOfType { get; set; }
 }

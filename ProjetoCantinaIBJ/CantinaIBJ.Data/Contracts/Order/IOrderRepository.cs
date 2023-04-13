@@ -6,7 +6,10 @@ namespace CantinaIBJ.Data.Contracts;
 
 public interface IOrderRepository : IRepositoryBase<Order>
 {
-    Task<List<Order>> GetOrders(UserContext contextUser);
+    Task<ListDataPagination<Order>> GetListOrders(UserContext contextUser,
+        string customerName,
+        int page,
+        int size);
     Task<Order> GetOrderByIdAsync(UserContext contextUser, int id);
     Task AddOrderAsync(UserContext contextUser, Order order);
 }

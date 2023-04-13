@@ -10,9 +10,9 @@ public enum OrderStatus
     [Description("Em andamento")]
     InProgress = 1,
 
-    [Description("Encerrado")]
-    Closed = 2,
-
+    [Description("Finalizado")]
+    Finished = 2,
+    
     [Description("Cancelado")]
     Canceled = 3,
 

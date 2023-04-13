@@ -15,6 +15,10 @@ public class Order : BaseModel
     public List<OrderProduct> Products { get; set; }
     
     public decimal TotalValue { get; set; }
+    
+    public decimal? PaymentValue { get; set; }
+    
+    public decimal? ChangeValue { get; set; }
 
     public OrderStatus Status { get; set; } = OrderStatus.Created;
     
