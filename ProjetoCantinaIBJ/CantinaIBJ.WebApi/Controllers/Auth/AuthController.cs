@@ -33,7 +33,11 @@ public class AuthController : ControllerBase
     /// Realiza o login do usuário
     /// </summary>
     /// <param name="request"></param>
-    /// <returns></returns>
+    /// <response code="200">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
     [AllowAnonymous]
     [HttpPost("login")]
     [ApiExplorerSettings(IgnoreApi = false)]
@@ -61,7 +65,7 @@ public class AuthController : ControllerBase
             case UserGroups.User:
                 claims = new List<Claim>()
                 {
-                    new Claim("role", user.Id.ToString()),
+                    new Claim("userid", user.Id.ToString()),
                     new Claim("emailaddress", user.Email),
                     new Claim("user", "true")
                 };
@@ -79,7 +83,11 @@ public class AuthController : ControllerBase
     /// Valida um token Jwt
     /// </summary>
     /// <param name="token"></param>
-    /// <returns></returns>
+    /// <response code="200">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
 #if RELEASE
     [ApiExplorerSettings(IgnoreApi = true)]
 #endif
@@ -102,7 +110,11 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Teste para ver o retorno da autorização pelo token
     /// </summary>
-    /// <returns></returns>
+    /// <response code="200">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
 #if RELEASE
     [ApiExplorerSettings(IgnoreApi = true)]
 #endif

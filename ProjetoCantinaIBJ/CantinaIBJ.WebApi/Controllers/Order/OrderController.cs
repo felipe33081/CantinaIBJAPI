@@ -53,7 +53,11 @@ public class OrderController : CoreController
     /// <summary>
     /// Lista todos os pedidos
     /// </summary>
-    /// <returns></returns>
+    /// <response code="200">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
     [HttpGet]
     [Authorize(Policy.User)]
     public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
@@ -85,7 +89,11 @@ public class OrderController : CoreController
     /// Acessa um registro de pedido por Id(Código)
     /// </summary>
     /// <param name="id"></param>
-    /// <returns></returns>
+    /// <response code="200">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
     [HttpGet("{id}")]
     [Authorize(Policy.User)]
     [ProducesResponseType(typeof(OrderReadModel), 200)]
@@ -113,7 +121,11 @@ public class OrderController : CoreController
     /// Cria um novo registro de um pedido
     /// </summary>
     /// <param name="model"></param>
-    /// <returns></returns>
+    /// <response code="200">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
     [HttpPost]
     [Authorize(Policy.User)]
     [ProducesResponseType(typeof(Guid), 200)]
@@ -162,7 +174,11 @@ public class OrderController : CoreController
     /// </summary>
     /// <param name="id"></param>
     /// <param name="updateModel"></param>
-    /// <returns></returns>
+    /// <response code="204">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}")]
     [Authorize(Policy.User)]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] OrderUpdateModel updateModel)
@@ -211,7 +227,11 @@ public class OrderController : CoreController
     /// Exclui um registro de um pedido
     /// </summary>
     /// <param name="id"></param>
-    /// <returns></returns>
+    /// <response code="204">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
     [HttpDelete("{id}")]
     [Authorize(Policy.User)]
     public async Task<IActionResult> Delete([FromRoute] int id)
