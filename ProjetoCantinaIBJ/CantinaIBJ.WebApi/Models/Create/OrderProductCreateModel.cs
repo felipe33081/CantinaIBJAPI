@@ -11,9 +11,4 @@ public class OrderProductCreateModel
     /// Quantidade do produto
     /// </summary>
     public int Quantity { get; set; }
-
-    /// <summary>
-    /// Preço unitário do produto
-    /// </summary>
-    public decimal Price { get; set; }
 }

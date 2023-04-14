@@ -40,9 +40,15 @@ public class CustomerPersonController : CoreController
     /// <summary>
     /// Lista todos os clientes
     /// </summary>
-    /// <returns></returns>
+    /// <param name="page"></param>
+    /// <param name="size"></param>
+    /// <param name="searchString"></param>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
     [HttpGet]
     [Authorize(Policy.User)]
+    [ProducesResponseType(typeof(ListDataPagination<CustomerPersonReadModel>), 200)]
     public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
         [FromQuery] string? searchString = null)
     {
@@ -71,8 +77,10 @@ public class CustomerPersonController : CoreController
     /// <summary>
     /// Acessa um registro de cliente por Id(Código)
     /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
+    /// <param name="id">Id do cliente</param>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
     [HttpGet("{id}")]
     [Authorize(Policy.User)]
     [ProducesResponseType(typeof(CustomerPersonReadModel), 200)]
@@ -99,8 +107,10 @@ public class CustomerPersonController : CoreController
     /// <summary>
     /// Cria um novo registro de um cliente
     /// </summary>
-    /// <param name="model"></param>
-    /// <returns></returns>
+    /// <param name="model">Modelo de dados de entrada</param>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
     [HttpPost]
     [Authorize(Policy.User)]
     [ProducesResponseType(typeof(Guid), 200)]
@@ -127,11 +137,15 @@ public class CustomerPersonController : CoreController
     /// <summary>
     /// Atualiza um registro de um cliente
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="updateModel"></param>
-    /// <returns></returns>
+    /// <param name="id">Id do cliente</param>
+    /// <param name="updateModel">Modelo de dados de entrada</param>
+    /// <response code="204">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
     [HttpPut("{id}")]
-    [Authorize(Policy.User)]
+    [Authorize(Policy.Admin)]
+    [ProducesResponseType(204)]
     public async Task<IActionResult> Update([FromRoute] int id, 
                                             [FromBody] CustomerPersonUpdateModel updateModel)
     {
@@ -162,10 +176,14 @@ public class CustomerPersonController : CoreController
     /// <summary>
     /// Exclui um registro de um cliente
     /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
+    /// <param name="id">Id do cliente</param>
+    /// <response code="204">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
     [HttpDelete("{id}")]
     [Authorize(Policy.Admin)]
+    [ProducesResponseType(204)]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try

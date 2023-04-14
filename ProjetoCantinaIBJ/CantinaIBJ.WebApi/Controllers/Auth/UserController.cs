@@ -38,15 +38,17 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
         }
 
         /// <summary>
-        /// Lista todos os clientes
+        /// Lista todos os usuários
         /// </summary>
-        /// <response code="200">Sucesso</response>
+        /// <param name="page"></param>
+        /// <param name="size"></param>
+        /// <param name="searchString"></param>
         /// <response code="400">Modelo inválido</response>
         /// <response code="401">Não autorizado</response>
         /// <response code="403">Acesso negado</response>
-        /// <response code="404">Chave não encontrada</response>
         [HttpGet]
         [Authorize(Policy.User)]
+        [ProducesResponseType(typeof(ListDataPagination<UserReadModel>), 204)]
         public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
             [FromQuery] string? searchString = null)
         {
@@ -75,12 +77,10 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
         /// <summary>
         /// Acessa um registro de usuário por Id(Código)
         /// </summary>
-        /// <param name="id"></param>
-        /// <response code="200">Sucesso</response>
+        /// <param name="id">Id do usuário</param>
         /// <response code="400">Modelo inválido</response>
         /// <response code="401">Não autorizado</response>
         /// <response code="403">Acesso negado</response>
-        /// <response code="404">Chave não encontrada</response>
         [HttpGet("{id}")]
         [Authorize(Policy.Admin)]
         [ProducesResponseType(typeof(UserReadModel), 200)]
@@ -107,12 +107,10 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
         /// <summary>
         /// Cria um novo registro de um usuário
         /// </summary>
-        /// <param name="model"></param>
-        /// <response code="200">Sucesso</response>
+        /// <param name="model">Modelo de dados de entrada</param>
         /// <response code="400">Modelo inválido</response>
         /// <response code="401">Não autorizado</response>
         /// <response code="403">Acesso negado</response>
-        /// <response code="404">Chave não encontrada</response>
         [HttpPost]
         [Authorize(Policy.Admin)]
         [ProducesResponseType(typeof(Guid), 200)]
@@ -124,6 +122,9 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
             try
             {
                 var contextUser = _userContext.GetContextUser();
+
+                if (model.Password != model.PasswordConfirmation)
+                    return BadRequest("Senha digitada não correponde com a confirmação de senha");
 
                 var user = _mapper.Map<User>(model);
                 await _userRepository.AddUserAsync(contextUser, user);
@@ -139,15 +140,15 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
         /// <summary>
         /// Atualiza um registro de um usuário
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="updateModel"></param>
+        /// <param name="id">Id do usuário</param>
+        /// <param name="updateModel">Modelo de dados de entrada</param>
         /// <response code="204">Sucesso</response>
         /// <response code="400">Modelo inválido</response>
         /// <response code="401">Não autorizado</response>
         /// <response code="403">Acesso negado</response>
-        /// <response code="404">Chave não encontrada</response>
         [HttpPut("{id}")]
         [Authorize(Policy.Admin)]
+        [ProducesResponseType(204)]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UserUpdateModel updateModel)
         {
             if (!ModelState.IsValid)
@@ -178,14 +179,14 @@ namespace CantinaIBJ.WebApi.Controllers.Auth
         /// <summary>
         /// Exclui um registro de um usuário
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="id">Id do usuário</param>
         /// <response code="204">Sucesso</response>
         /// <response code="400">Modelo inválido</response>
         /// <response code="401">Não autorizado</response>
         /// <response code="403">Acesso negado</response>
-        /// <response code="404">Chave não encontrada</response>
         [HttpDelete("{id}")]
         [Authorize(Policy.Admin)]
+        [ProducesResponseType(204)]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
             try

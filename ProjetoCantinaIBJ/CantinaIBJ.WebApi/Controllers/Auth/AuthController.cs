@@ -3,6 +3,7 @@ using CantinaIBJ.Model.Enumerations;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Interfaces;
 using CantinaIBJ.WebApi.Models;
+using CantinaIBJ.WebApi.Models.Read.Order;
 using CantinaIBJ.WebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -32,15 +33,14 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Realiza o login do usuário
     /// </summary>
-    /// <param name="request"></param>
-    /// <response code="200">Sucesso</response>
+    /// <param name="request">Modelo de dados de entrada</param>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
-    /// <response code="404">Chave não encontrada</response>
     [AllowAnonymous]
     [HttpPost("login")]
     [ApiExplorerSettings(IgnoreApi = false)]
+    [ProducesResponseType(typeof(string), 200)]
     public async Task<IActionResult> Login([FromBody] UserRequestModel request)
     {
         var user = await _userRepository.GetUserByUsernameAsync(request.Username);
@@ -83,15 +83,14 @@ public class AuthController : ControllerBase
     /// Valida um token Jwt
     /// </summary>
     /// <param name="token"></param>
-    /// <response code="200">Sucesso</response>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
-    /// <response code="404">Chave não encontrada</response>
 #if RELEASE
     [ApiExplorerSettings(IgnoreApi = true)]
 #endif
     [HttpPost("validateTokenJwt")]
+    [ProducesResponseType(typeof(string), 200)]
     public IActionResult ValidateTokenJwt(string token)
     {
         try
@@ -110,16 +109,15 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Teste para ver o retorno da autorização pelo token
     /// </summary>
-    /// <response code="200">Sucesso</response>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
-    /// <response code="404">Chave não encontrada</response>
 #if RELEASE
     [ApiExplorerSettings(IgnoreApi = true)]
 #endif
     [Authorize(Policy.Admin)]
     [HttpGet("isAdmin")]
+    [ProducesResponseType(typeof(string), 200)]
     public IActionResult Me()
     {
         var contextUser = _userContext.GetContextUser();

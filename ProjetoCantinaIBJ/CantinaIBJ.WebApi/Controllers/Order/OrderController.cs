@@ -9,6 +9,7 @@ using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Helpers;
 using CantinaIBJ.WebApi.Mapper;
+using CantinaIBJ.WebApi.Models;
 using CantinaIBJ.WebApi.Models.Create.Order;
 using CantinaIBJ.WebApi.Models.Read.Order;
 using CantinaIBJ.WebApi.Models.Update.Order;
@@ -25,6 +26,7 @@ namespace CantinaIBJ.WebApi.Controllers;
 public class OrderController : CoreController
 {
     readonly IOrderRepository _orderRepository;
+    readonly IProductRepository _productRepository;
     readonly ICustomerPersonRepository _customerPersonRepository;
     readonly OrderHelper _orderHelper;
     readonly Mappers _mappers;
@@ -39,7 +41,8 @@ public class OrderController : CoreController
         Mappers mappers,
         HttpUserContext userContext,
         ICustomerPersonRepository customerPersonRepository,
-        OrderHelper orderHelper)
+        OrderHelper orderHelper,
+        IProductRepository productRepository)
     {
         _mapper = mapper;
         _logger = logger;
@@ -48,18 +51,21 @@ public class OrderController : CoreController
         _userContext = userContext;
         _customerPersonRepository = customerPersonRepository;
         _orderHelper = orderHelper;
+        _productRepository = productRepository;
     }
 
     /// <summary>
     /// Lista todos os pedidos
     /// </summary>
-    /// <response code="200">Sucesso</response>
+    /// <param name="page"></param>
+    /// <param name="size"></param>
+    /// <param name="customerName"></param>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
-    /// <response code="404">Chave não encontrada</response>
     [HttpGet]
     [Authorize(Policy.User)]
+    [ProducesResponseType(typeof(ListDataPagination<OrderReadModel>), 200)]
     public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
         [FromQuery] string? customerName = null)
     {
@@ -88,8 +94,7 @@ public class OrderController : CoreController
     /// <summary>
     /// Acessa um registro de pedido por Id(Código)
     /// </summary>
-    /// <param name="id"></param>
-    /// <response code="200">Sucesso</response>
+    /// <param name="id">Id do pedido</param>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
@@ -120,8 +125,7 @@ public class OrderController : CoreController
     /// <summary>
     /// Cria um novo registro de um pedido
     /// </summary>
-    /// <param name="model"></param>
-    /// <response code="200">Sucesso</response>
+    /// <param name="model">Modelo de dados de entrada</param>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
@@ -138,22 +142,26 @@ public class OrderController : CoreController
         {
             var contextUser = _userContext.GetContextUser();
 
-            CustomerPerson? customerPerson = null;
-
             //validação para ver se foi preenchido id de um cliente pré-cadastrado, ou se preencheu o nome do cliente, ou um ou outro, dar exceção se nao preencher nenhum
             if (model.CustomerPersonId == null && string.IsNullOrEmpty(model.CustomerName))
-                BadRequest("Informar um cliente Pré-Cadastrado, Se não cadastro, informar somente o nome do cliente");
+                return BadRequest("Informar um cliente Pré-Cadastrado, Se não cadastro, informar somente o nome do cliente");
 
             var order = _mapper.Map<Order>(model);
 
-            if (order.CustomerPersonId != null && order.CustomerPersonId > 0)
-                customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, order.CustomerPersonId.Value);
+            if (model.CustomerPersonId != null && model.CustomerPersonId > 0)
+            {
+                var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, model.CustomerPersonId.Value);
+                if (customerPerson == null)
+                    return NotFound("Cliente não encontrado");
+            }
 
             //faz a soma do preço dos itens com a quantidade, e atualizar no valor total do pedido
             decimal productsValues = 0;
-            foreach (var product in order.Products)
+            foreach (var orderProduct in order.Products)
             {
-                var totalPriceProduct = product.Quantity * product.Price;
+                var product = await _productRepository.GetProductByIdAsync(contextUser, orderProduct.ProductId);
+                orderProduct.Price = product.Price;
+                var totalPriceProduct = orderProduct.Quantity * product.Price;
                 productsValues += totalPriceProduct;
             }
 
@@ -172,8 +180,8 @@ public class OrderController : CoreController
     /// <summary>
     /// Atualiza um registro de um pedido
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="updateModel"></param>
+    /// <param name="id">Id do pedido</param>
+    /// <param name="updateModel">Modelo de dados de entrada</param>
     /// <response code="204">Sucesso</response>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
@@ -181,6 +189,7 @@ public class OrderController : CoreController
     /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}")]
     [Authorize(Policy.User)]
+    [ProducesResponseType(204)]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] OrderUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
@@ -191,30 +200,38 @@ public class OrderController : CoreController
             var contextUser = _userContext.GetContextUser();
 
             var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
+            if (order == null)
+                return NotFound("Pedido não encontrado");
 
-            CustomerPerson? customerPerson = null;
+            if (order.Status == OrderStatus.Canceled)
+                return BadRequest("O pedido está cancelado, não é possível atualizar");
 
-            if (order.CustomerPersonId != null && order.CustomerPersonId > 0)
-                customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, order.CustomerPersonId.Value);
-
-            if (updateModel.Status == OrderStatus.Finished && updateModel.PaymentValue == null && updateModel.PaymentOfType == null)
-                BadRequest("Se for finalizar o pedido, é obrigatório informar o valor do pagamento e ");
-
+            if (updateModel.CustomerPersonId != null && updateModel.CustomerPersonId > 0)
+            {
+                var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, updateModel.CustomerPersonId.Value);
+                if (customerPerson == null)
+                    return NotFound("Cliente não encontrado");
+            }
+            
             _mapper.Map(updateModel, order);
 
             //faz a soma do preço dos itens com a quantidade, e atualizar no valor total do pedido
             decimal productsValues = 0;
-            foreach (var product in order.Products)
+            foreach (var orderProduct in order.Products)
             {
-                var totalPriceProduct = product.Quantity * product.Price;
+                var product = await _productRepository.GetProductByIdAsync(contextUser, orderProduct.ProductId);
+                orderProduct.Price = product.Price;
+                var totalPriceProduct = orderProduct.Quantity * product.Price;
                 productsValues += totalPriceProduct;
             }
 
             order.TotalValue = productsValues;
-
-            //Helper para verificar status e forma de pagamento, para fazer os cálculos devidos
-            await _orderHelper.UpdateCalculatePaymentsOrder(contextUser, order, customerPerson);
+            order.UpdatedAt = DateTime.UtcNow;
+            order.UpdatedBy = contextUser.GetCurrentUser();
+            await _orderRepository.UpdateAsync(order);
             
+            //TODO: Fazer novo endpoint, que vai servir pro "botão" finalizar (pedido), para que esse outro endpoint possa fazer todos esses calculos do helper anterior
+
             return NoContent();
         }
         catch (Exception e)
@@ -224,7 +241,58 @@ public class OrderController : CoreController
     }
 
     /// <summary>
-    /// Exclui um registro de um pedido
+    /// Finaliza o pedido
+    /// </summary>
+    /// <param name="id">Id do pedido</param>
+    /// <param name="requestModel">Modelo de dados de entrada</param>
+    /// <response code="204">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
+    [HttpPost("{id}/finalize")]
+    [Authorize(Policy.User)]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> FinalizeOrder([FromRoute] int id, [FromBody] FinalizeOrderRequestModel requestModel)
+    {
+        try
+        {
+            var contextUser = _userContext.GetContextUser();
+
+            var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
+            if (order == null)
+                return NotFound("Pedido não encontrado");
+
+            if (requestModel.PaymentOfType == PaymentOfType.Debitor && requestModel.PaymentValue > order.TotalValue)
+                return BadRequest("Valor do pagamento não pode ser maior do que o valor do pedido, para o tipo de pagamento escolhido");
+
+            if (requestModel.PaymentOfType == PaymentOfType.ExtraMoney && requestModel.PaymentValue < order.TotalValue)
+                return BadRequest("Valor do pagamento não pode ser menor do que o valor do pedido, para o tipo de pagamento escolhido");
+
+            if (order.Status != OrderStatus.InProgress)
+                return BadRequest("Só é possível finalizar um pedido em andamento");
+
+            CustomerPerson? customerPerson = null;
+            if (order.CustomerPersonId != null && order.CustomerPersonId > 0)
+            {
+                customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, order.CustomerPersonId.Value);
+                if (customerPerson == null)
+                    return NotFound("Cliente não encontrado");
+            }
+
+            //Helper para verificar status e forma de pagamento, para fazer os cálculos devidos
+            await _orderHelper.UpdateCalculatePaymentsOrder(contextUser, order, requestModel, customerPerson);
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return LoggerBadRequest(e, _logger);
+        }
+    }
+
+    /// <summary>
+    /// Cancela um pedido
     /// </summary>
     /// <param name="id"></param>
     /// <response code="204">Sucesso</response>
@@ -232,8 +300,46 @@ public class OrderController : CoreController
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
+    [HttpPost("{id}/cancel")]
+    [Authorize(Policy.User)]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> CancelOrder([FromRoute] int id)
+    {
+        try
+        {
+            var contextUser = _userContext.GetContextUser();
+
+            var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
+            if (order is null)
+                return NotFound("Pedido não encontrado");
+
+            if (order.Status != OrderStatus.InProgress)
+                return BadRequest("Só é possível cancelar um pedido em andamento");
+
+            order.Status = OrderStatus.Canceled;
+            order.UpdatedAt = DateTime.UtcNow;
+            order.UpdatedBy = contextUser.GetCurrentUser();
+            await _orderRepository.UpdateAsync(order);
+        }
+        catch (Exception e)
+        {
+            LoggerBadRequest(e, _logger);
+        }
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Exclui um registro de um pedido
+    /// </summary>
+    /// <remarks>Deleta um pedido</remarks>
+    /// <param name="id">Id do pedido</param>
+    /// <response code="204">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
     [HttpDelete("{id}")]
     [Authorize(Policy.User)]
+    [ProducesResponseType(204)]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try

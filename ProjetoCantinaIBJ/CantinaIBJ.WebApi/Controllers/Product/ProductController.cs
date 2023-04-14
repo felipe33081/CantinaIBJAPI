@@ -47,13 +47,15 @@ public class ProductController : CoreController
     /// <summary>
     /// Lista todos os produtos
     /// </summary>
-    /// <response code="200">Sucesso</response>
+    /// <param name="page"></param>
+    /// <param name="size"></param>
+    /// <param name="searchString"></param>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
-    /// <response code="404">Chave não encontrada</response>
     [HttpGet]
     [Authorize(Policy.User)]
+    [ProducesResponseType(typeof(ListDataPagination<ProductReadModel>), 200)]
     public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
         [FromQuery] string? searchString = null)
     {
@@ -82,12 +84,10 @@ public class ProductController : CoreController
     /// <summary>
     /// Acessa um registro de produto por Id(Código)
     /// </summary>
-    /// <param name="id"></param>
-    /// <response code="200">Sucesso</response>
+    /// <param name="id">Id do produto</param>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
-    /// <response code="404">Chave não encontrada</response>
     [HttpGet("{id}")]
     [Authorize(Policy.User)]
     [ProducesResponseType(typeof(ProductReadModel), 200)]
@@ -114,12 +114,10 @@ public class ProductController : CoreController
     /// <summary>
     /// Cria um novo registro de um produto
     /// </summary>
-    /// <param name="model"></param>
-    /// <response code="200">Sucesso</response>
+    /// <param name="model">Modelo de dados de entrada</param>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
-    /// <response code="404">Chave não encontrada</response>
     [HttpPost]
     [Authorize(Policy.Admin)]
     [ProducesResponseType(typeof(Guid), 200)]
@@ -146,15 +144,15 @@ public class ProductController : CoreController
     /// <summary>
     /// Atualiza um registro de um produto
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="updateModel"></param>
+    /// <param name="id">Id do produto</param>
+    /// <param name="updateModel">Modelo de dados de entrada</param>
     /// <response code="204">Sucesso</response>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
-    /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}")]
     [Authorize(Policy.Admin)]
+    [ProducesResponseType(204)]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProductUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
@@ -186,14 +184,14 @@ public class ProductController : CoreController
     /// <summary>
     /// Exclui um registro de um produto
     /// </summary>
-    /// <param name="id"></param>
+    /// <param name="id">Id do produto</param>
     /// <response code="204">Sucesso</response>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
-    /// <response code="404">Chave não encontrada</response>
     [HttpDelete("{id}")]
     [Authorize(Policy.Admin)]
+    [ProducesResponseType(204)]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try

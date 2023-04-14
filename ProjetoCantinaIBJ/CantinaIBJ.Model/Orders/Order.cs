@@ -20,7 +20,7 @@ public class Order : BaseModel
     
     public decimal? ChangeValue { get; set; }
 
-    public OrderStatus Status { get; set; } = OrderStatus.Created;
+    public OrderStatus Status { get; set; } = OrderStatus.InProgress;
     
     public PaymentOfType? PaymentOfType { get; set; }
 }

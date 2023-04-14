@@ -20,12 +20,7 @@ public class CustomerPersonUpdateModel : BaseUpdateModel
     public string Phone { get; set; }
 
     /// <summary>
-    /// Valor debitado do cliente
+    /// Valor do saldo existente na conta do cliente
     /// </summary>
-    public decimal? DebitBalance { get; set; }
-
-    /// <summary>
-    /// Valor creditado no cliente
-    /// </summary>
-    public decimal? CreditBalance { get; set; }
+    public decimal? Balance { get; set; }
 }
