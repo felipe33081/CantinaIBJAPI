@@ -46,8 +46,12 @@ public class OrderReadModel : BaseReadModel
     /// </summary>
     public OrderStatus Status { get; set; }
 
+    public string? StatusDisplay { get; set; }
+
     /// <summary>
     /// Tipo de pagamento
     /// </summary>
     public PaymentOfType? PaymentOfType { get; set; }
+
+    public string? PaymentOfTypeDisplay { get; set; }
 }

@@ -1,18 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
 
 namespace CantinaIBJ.Model.Enumerations
 {
     public enum UserGroups
     {
+        /// <summary>
+        /// Administrador
+        /// </summary>
         [Description("admin")]
-        Admin,
+        Admin = 0,
 
+        /// <summary>
+        /// Usuário
+        /// </summary>
         [Description("user")]
-        User
+        User = 1
     }
 }

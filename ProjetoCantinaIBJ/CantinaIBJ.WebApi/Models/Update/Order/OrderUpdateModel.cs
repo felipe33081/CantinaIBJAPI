@@ -10,7 +10,6 @@ public class OrderUpdateModel : BaseUpdateModel
     /// <summary>
     /// Cliente pré-cadastrado relacionado ao pedido
     /// </summary>
-    [Range(0, int.MaxValue, ErrorMessage = "O Campo {0} deve ser maior que zero")]
     public int? CustomerPersonId { get; set; }
 
     /// <summary>
@@ -21,5 +20,6 @@ public class OrderUpdateModel : BaseUpdateModel
     /// <summary>
     /// Lista de produtos relacionados ao pedido
     /// </summary>
-    public List<OrderProductUpdateModel> Products { get; set; }
+    [Required(ErrorMessage = "o Campo {0} é obrigatório")]
+    public List<OrderProductUpdateModel>? Products { get; set; }
 }

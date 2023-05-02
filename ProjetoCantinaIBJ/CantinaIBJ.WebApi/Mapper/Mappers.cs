@@ -21,7 +21,7 @@ public class Mappers
             Price = product.Price,
             Quantity = product.Quantity,
             Description = product.Description,
-            Diponibility = product.Diponibility,
+            Diponibility = product.Disponibility,
             UpdatedAt = DateTime.UtcNow,
             UpdatedBy = user.GetCurrentUser()
         };

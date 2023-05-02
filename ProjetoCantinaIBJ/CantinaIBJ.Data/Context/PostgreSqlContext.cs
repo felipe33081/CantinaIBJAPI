@@ -1,9 +1,8 @@
-﻿using CantinaIBJ.Model.Customer;
+﻿using CantinaIBJ.Data.Context.Configuration;
 using CantinaIBJ.Model;
-using CantinaIBJ.Model.User;
-using Microsoft.EntityFrameworkCore;
+using CantinaIBJ.Model.Customer;
 using CantinaIBJ.Model.Orders;
-using CantinaIBJ.Data.Context.Configuration;
+using Microsoft.EntityFrameworkCore;
 
 namespace CantinaIBJ.Data.Context;
 
@@ -17,7 +16,6 @@ public class PostgreSqlContext : DbContext
     public DbSet<Product> Product { get; set; }
     public DbSet<ProductHistoric> ProductHistoric { get; set; }
     public DbSet<Order> Order { get; set; }
-    public DbSet<User> User { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -28,6 +26,7 @@ public class PostgreSqlContext : DbContext
     {
         modelBuilder.ApplyConfiguration(new OrderProductConfiguration());
         modelBuilder.ApplyConfiguration(new OrderConfiguration());
+        modelBuilder.ApplyConfiguration(new CustomerPersonConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }

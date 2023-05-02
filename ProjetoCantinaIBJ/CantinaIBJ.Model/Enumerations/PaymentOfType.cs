@@ -1,4 +1,4 @@
-﻿using ServiceStack.DataAnnotations;
+﻿using System.ComponentModel;
 
 namespace CantinaIBJ.Model.Enumerations;
 

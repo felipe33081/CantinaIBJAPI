@@ -8,7 +8,7 @@ public class ProductCreateModel : BaseCreateModel
     /// <summary>
     /// Nome do produto
     /// </summary>
-    [Required]
+    [Required(ErrorMessage = "O campo {0} é obrigatório")]
     public string Name { get; set; }
 
     /// <summary>
@@ -19,18 +19,12 @@ public class ProductCreateModel : BaseCreateModel
     /// <summary>
     /// Preço do produto
     /// </summary>
-    [Required]
+    [Required(ErrorMessage = "O campo {0} é obrigatório")]
     public decimal Price { get; set; }
 
     /// <summary>
     /// Quantidade do produto em estoque
     /// </summary>
-    [Required]
+    [Required(ErrorMessage = "O campo {0} é obrigatório")]
     public int Quantity { get; set; }
-
-    /// <summary>
-    /// Disponiblidade do produto em estoque
-    /// </summary>
-    [Required]
-    public bool Diponibility { get; set; }
 }

@@ -14,6 +14,7 @@ public class CustomerPersonCreateModel : BaseCreateModel
     /// <summary>
     /// E-mail do cliente
     /// </summary>
+    [EmailAddress(ErrorMessage = "Digite um e-mail válido")]
     public string? Email { get; set; }
 
     /// <summary>
@@ -21,9 +22,4 @@ public class CustomerPersonCreateModel : BaseCreateModel
     /// </summary>
     [Required(ErrorMessage = "Obrigatório informar o Celular")]
     public string Phone { get; set; }
-
-    /// <summary>
-    /// Valor do saldo existente na conta do cliente
-    /// </summary>
-    public decimal? Balance { get; set; }
 }

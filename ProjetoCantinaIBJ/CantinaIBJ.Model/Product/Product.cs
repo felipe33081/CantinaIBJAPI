@@ -12,12 +12,12 @@ public class Product : BaseModel
 
     [Required]
     public decimal Price { get; set; }
-
+    
     [Required]
     public int Quantity { get; set; }
 
     [Required]
-    public bool Diponibility { get; set; }
+    public bool Disponibility { get; set; } = false;
 
     public List<OrderProduct> OrdersProducts { get; set; }
 }

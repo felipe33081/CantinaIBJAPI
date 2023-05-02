@@ -2,6 +2,8 @@
 using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Data.Repositories;
 using CantinaIBJ.Data.Repositories.Customer;
+using CantinaIBJ.Integration.Cognito;
+using CantinaIBJ.Model.AppSettings;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Helpers;
 using CantinaIBJ.WebApi.Interfaces;
@@ -17,6 +19,16 @@ public static class ServicesConfiguration
 {
     public static IServiceCollection ConfigureRepositories(this IServiceCollection services)
     {
+        services.AddScoped<ICustomerPersonRepository, CustomerPersonRepository>();
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IProductHistoricRepository, ProductHistoricRepository>();
+
+        return services;
+    }
+
+    public static IServiceCollection ConfigureServices(this IServiceCollection services)
+    {
         services.AddScoped<Mappers>();
         services.AddScoped<MapperProfile>();
 
@@ -24,15 +36,15 @@ public static class ServicesConfiguration
         services.AddHttpContextAccessor();
 
         services.AddScoped<OrderHelper>();
+        services.AddScoped<SmtpHelper>();
 
+        services.AddScoped<ValidateModelAttribute>();
+
+        services.AddScoped<CognitoSettings>();
+
+        services.AddScoped<ICognitoCommunication, CognitoCommunication>();
         //Jwt
         services.AddScoped<IJwtService, JwtService>();
-
-        services.AddScoped<ICustomerPersonRepository, CustomerPersonRepository>();
-        services.AddScoped<IProductRepository, ProductRepository>();
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IOrderRepository, OrderRepository>();
-        services.AddScoped<IProductHistoricRepository, ProductHistoricRepository>();
 
         return services;
     }

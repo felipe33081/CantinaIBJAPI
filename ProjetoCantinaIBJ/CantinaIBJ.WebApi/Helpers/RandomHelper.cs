@@ -276,7 +276,7 @@ public static class RandomHelpers
         return values;
     }
 
-    public static string GetEnumDescription(Enum value)
+    public static string GetEnumDescription(Enum? value = null)
     {
         return GetEnumDescription(value, "");
     }
@@ -285,7 +285,7 @@ public static class RandomHelpers
     {
         if (value == null)
         {
-            return default(string);
+            return "N/a";
         }
         try
         {
@@ -368,6 +368,34 @@ public static class RandomHelpers
         }
 
         return new string(stringChars);
+    }
+
+    public static string GenerateRandomToken(int length)
+    {
+        Random random = new();
+        StringBuilder sb = new();
+
+        for (int i = 0; i < length; i++)
+        {
+            sb.Append(random.Next(0, 10));
+        }
+
+        return sb.ToString();
+    }
+
+    public static string GenerateRandomPassword()
+    {
+        const string caracteres = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*_+";
+        var random = new Random();
+
+        var senha = new StringBuilder();
+        for (int i = 0; i < 10; i++)
+        {
+            var index = random.Next(caracteres.Length);
+            senha.Append(caracteres[index]);
+        }
+
+        return senha.ToString();
     }
 
     public static double CalculateDistance(double initialLatitude, double initialLongitude,

@@ -27,5 +27,5 @@ public class ProductUpdateModel : BaseUpdateModel
     /// <summary>
     /// Disponiblidade do produto em estoque
     /// </summary>
-    public bool Diponibility { get; set; }
+    public bool Disponibility { get; set; }
 }

@@ -9,9 +9,13 @@ public class UserContext
 
     public string Name { get; set; }
 
+    public string Tenant { get; set; }
+
     public string Email { get; set; }
 
-    public string Aud { get; set; }
+    public string PhoneNumber { get; set; }
+
+    public string JwtId { get; set; }
 
     public string Group { get; set; }
 
@@ -23,6 +27,6 @@ public class UserContext
     #region [Behaviors]
 
     public string GetCurrentUser() => string.IsNullOrEmpty(Name) ? "" : Name;
-
+    public string GetCurrentUserPoolId() => string.IsNullOrEmpty(Tenant) ? "" : Tenant;
     #endregion
 }

@@ -2,6 +2,8 @@
 using CantinaIBJ.Data.Contracts;
 using CantinaIBJ.Data.Repositories.Core;
 using CantinaIBJ.Model;
+using CantinaIBJ.Model.Customer;
+using CantinaIBJ.Model.Enumerations;
 using CantinaIBJ.Model.Orders;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,21 +16,50 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
 
     }
 
-    public async Task<ListDataPagination<Order>> GetListOrders(UserContext contextUser,
-        string customerName,
-        int page,
-        int size)
+    public async Task<int> GetCountList()
+    {
+        int totalCount;
+        return totalCount = Context.Order
+            .Where(x => x.IsDeleted == false)
+            .Count();
+    }
+
+    public async Task<ListDataPagination<Order>> GetListOrders(UserContext contextUser, int page, int size, string? searchString, bool isDeleted, string? orderBy, OrderStatus? status)
     {
         var query = Context.Order
             .Include(x => x.CustomerPerson)
-            .Include(x => x.Products).ThenInclude(c => c.Product)
+            .Include(x => x.Products).ThenInclude(o => o.Product)
             .Where(x => x.IsDeleted == false);
-        
-        if (!string.IsNullOrEmpty(customerName))
+
+        if (!string.IsNullOrEmpty(searchString))
         {
-            customerName = customerName.ToLower().Trim();
-            query = query.Where(q => q.CustomerName.ToLower().Contains(customerName) ||
-            q.CustomerPerson.Name.ToLower().Contains(customerName));
+            searchString = searchString.ToLower().Trim();
+            query = query.Where(q => q.CustomerPerson.Name.ToLower().Contains(searchString) ||
+            q.CustomerName.ToLower().Contains(searchString));
+        }
+
+        if (status != null)
+        {
+            query = query.Where(x => x.Status == status);
+        }
+
+        if (!string.IsNullOrEmpty(orderBy))
+        {
+            switch (orderBy)
+            {
+                case "id_DESC":
+                    query = query.OrderByDescending(t => t.Id);
+                    break;
+                case "id_ASC":
+                    query = query.OrderBy(t => t.Id);
+                    break;
+                case "createdAt_DESC":
+                    query = query.OrderByDescending(t => t.CreatedAt);
+                    break;
+                case "createdAt_ASC":
+                    query = query.OrderBy(t => t.CreatedAt);
+                    break;
+            }
         }
 
         var data = new ListDataPagination<Order>
@@ -36,11 +67,12 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
             Page = page,
             TotalItems = await query.CountAsync()
         };
+
         data.TotalPages = (int)Math.Ceiling((double)data.TotalItems / size);
 
-        data.Data = await query.Skip(size * page)
+        data.Data = await query
+            .Skip(size * page)
             .Take(size)
-            .AsNoTracking()
             .ToListAsync();
 
         return data;

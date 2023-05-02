@@ -16,5 +16,5 @@ public class CustomerPerson : BaseModel
     [Required]
     public string Phone { get; set; }
 
-    public decimal? Balance { get; set; }
+    public decimal? Balance { get; set; } = 0;
 }

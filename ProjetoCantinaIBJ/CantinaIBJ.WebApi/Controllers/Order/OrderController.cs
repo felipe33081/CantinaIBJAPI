@@ -11,12 +11,14 @@ using CantinaIBJ.WebApi.Helpers;
 using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Models;
 using CantinaIBJ.WebApi.Models.Create.Order;
+using CantinaIBJ.WebApi.Models.Read.Customer;
 using CantinaIBJ.WebApi.Models.Read.Order;
 using CantinaIBJ.WebApi.Models.Update.Order;
 using CantinaIBJ.WebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using static CantinaIBJ.WebApi.Common.Constants;
 
 namespace CantinaIBJ.WebApi.Controllers;
 
@@ -59,35 +61,44 @@ public class OrderController : CoreController
     /// </summary>
     /// <param name="page"></param>
     /// <param name="size"></param>
-    /// <param name="customerName"></param>
+    /// <param name="searchString"></param>
+    /// <param name="isDeleted"></param>
+    /// <param name="orderBy"></param>
+    /// /// <param name="status"></param>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     [HttpGet]
-    [Authorize(Policy.User)]
+    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(ListDataPagination<OrderReadModel>), 200)]
-    public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
-        [FromQuery] string? customerName = null)
+    public async Task<IActionResult> ListAsync([FromQuery] int page = 0,
+        [FromQuery] int size = 10,
+        [FromQuery] string? searchString = null,
+        [FromQuery] bool isDeleted = false,
+        [FromQuery] string? orderBy = null,
+        [FromQuery] OrderStatus? status = null)
     {
         try
         {
             var contextUser = _userContext.GetContextUser();
 
-            ListDataPagination<Order> listData = await _orderRepository.GetListOrders(contextUser, customerName, page, size);
+            var orders = await _orderRepository.GetListOrders(contextUser, page, size, searchString, isDeleted, orderBy, status);
 
-            var newData = new ListDataPagination<OrderReadModel>
+            var newData = new ListDataPagination<OrderReadModel>()
             {
-                Data = listData.Data.Select(c => _mapper.Map<OrderReadModel>(c)).ToList(),
+                Data = orders.Data.Select(c => _mapper.Map<OrderReadModel>(c)).ToList(),
                 Page = page,
-                TotalItems = listData.TotalItems,
-                TotalPages = listData.TotalPages
+                TotalItems = orders.TotalItems,
+                TotalPages = orders.TotalPages
             };
+
+            Response.Headers.Add("X-Total-Count", orders.TotalItems.ToString());
 
             return Ok(newData);
         }
         catch (Exception e)
         {
-            throw e;
+            return LoggerBadRequest(e, _logger);
         }
     }
 
@@ -100,7 +111,7 @@ public class OrderController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpGet("{id}")]
-    [Authorize(Policy.User)]
+    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(OrderReadModel), 200)]
     public async Task<IActionResult> GetById([FromRoute] int id)
     {
@@ -131,7 +142,7 @@ public class OrderController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPost]
-    [Authorize(Policy.User)]
+    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(Guid), 200)]
     public async Task<IActionResult> Create([FromBody] OrderCreateModel model)
     {
@@ -160,16 +171,36 @@ public class OrderController : CoreController
             foreach (var orderProduct in order.Products)
             {
                 var product = await _productRepository.GetProductByIdAsync(contextUser, orderProduct.ProductId);
-                orderProduct.Price = product.Price;
-                var totalPriceProduct = orderProduct.Quantity * product.Price;
-                productsValues += totalPriceProduct;
+                if (product is not null)
+                {
+                    if (product.Quantity <= 0)
+                    {
+                        if (product.Disponibility)
+                        {
+                            product.Disponibility = false;
+                        }
+                        return BadRequest($"Não é possível adicionar o produto: {product.Name}, o mesmo não se encontra disponível");
+                    }
+
+                    if (orderProduct.Quantity > product.Quantity)
+                        return BadRequest($"Não é possível adicionar uma quantidade maior do que a quantidade em estoque do produto: {product.Name}");
+
+                    product.Quantity -= orderProduct.Quantity;
+                    await _productRepository.UpdateAsync(product);
+
+                    orderProduct.Price = product.Price;
+                    var totalPriceProduct = orderProduct.Quantity * product.Price;
+                    productsValues += totalPriceProduct;
+                }
+                else
+                    return BadRequest("Produto não encontrado");
             }
 
             order.TotalValue = productsValues;
 
             await _orderRepository.AddOrderAsync(contextUser, order);
 
-            return Ok(order.Id);
+            return StatusCode(201, order.Id);
         }
         catch (Exception e)
         {
@@ -182,14 +213,13 @@ public class OrderController : CoreController
     /// </summary>
     /// <param name="id">Id do pedido</param>
     /// <param name="updateModel">Modelo de dados de entrada</param>
-    /// <response code="204">Sucesso</response>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}")]
-    [Authorize(Policy.User)]
-    [ProducesResponseType(204)]
+    [Authorize(Policy.USER)]
+    [ProducesResponseType(200)]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] OrderUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
@@ -212,27 +242,88 @@ public class OrderController : CoreController
                 if (customerPerson == null)
                     return NotFound("Cliente não encontrado");
             }
+
             
+            // Atualiza a quantidade de produtos removidos
+            foreach (var existingItem in order.Products)
+            {
+                var updatedItem = updateModel.Products.FirstOrDefault(i => i.ProductId == existingItem.ProductId);
+                if (updatedItem == null)
+                {
+                    var product = await _productRepository.GetProductByIdAsync(contextUser, existingItem.ProductId);
+                    product.Quantity += existingItem.Quantity;
+                    await _productRepository.UpdateAsync(product);
+                }
+            }
+
+            // Atualiza a quantidade de novos produtos adicionados
+            decimal productsValues = 0;
+            List<KeyValue> keyValues = new();
+            foreach (var newItem in updateModel.Products)
+            {
+                decimal totalPriceProduct = 0;
+                var existingItem = order.Products.FirstOrDefault(i => i.ProductId == newItem.ProductId);
+                if (existingItem == null)
+                {
+                    var product = await _productRepository.GetProductByIdAsync(contextUser, newItem.ProductId);
+                    if (product is not null)
+                    {
+                        if (product.Quantity <= 0)
+                        {
+                            if (product.Disponibility)
+                                product.Disponibility = false;
+
+                            return BadRequest($"Não é possível adicionar o produto: {product.Name}, o mesmo não se encontra disponível");
+                        }
+
+                        if (newItem.Quantity > product.Quantity)
+                            return BadRequest($"Não é possível adicionar uma quantidade maior do que a quantidade em estoque do produto: {product.Name}");
+
+                        totalPriceProduct = newItem.Quantity * product.Price;
+                        productsValues += totalPriceProduct;
+                    }
+                    else
+                        return BadRequest("Produto não encontrado");
+
+                    product.Quantity -= newItem.Quantity;
+                    KeyValue keyValue = new() { Key = product.Id, Value = product.Price };
+                    keyValues.Add(keyValue);
+                    await _productRepository.UpdateAsync(product);
+                }
+                else
+                {
+                    var product = await _productRepository.GetProductByIdAsync(contextUser, existingItem.ProductId);
+                    if (product == null || product.Quantity + existingItem.Quantity < newItem.Quantity)
+                    {
+                        return BadRequest();
+                    }
+                    product.Quantity += existingItem.Quantity - newItem.Quantity;
+                    existingItem.Quantity = newItem.Quantity;
+                    existingItem.Price = product.Price;
+                    totalPriceProduct = newItem.Quantity * product.Price;
+                    productsValues += totalPriceProduct;
+                    KeyValue keyValue = new() { Key = product.Id, Value = product.Price };
+                    keyValues.Add(keyValue);
+                    await _productRepository.UpdateAsync(product);
+                }
+            }
+
             _mapper.Map(updateModel, order);
 
-            //faz a soma do preço dos itens com a quantidade, e atualizar no valor total do pedido
-            decimal productsValues = 0;
-            foreach (var orderProduct in order.Products)
-            {
-                var product = await _productRepository.GetProductByIdAsync(contextUser, orderProduct.ProductId);
-                orderProduct.Price = product.Price;
-                var totalPriceProduct = orderProduct.Quantity * product.Price;
-                productsValues += totalPriceProduct;
-            }
+            keyValues.ForEach(key => {
+                order.Products.ForEach(prods =>{ 
+                    if (prods.ProductId == key.Key)
+                        prods.Price = key.Value;
+                });
+            });
 
             order.TotalValue = productsValues;
             order.UpdatedAt = DateTime.UtcNow;
             order.UpdatedBy = contextUser.GetCurrentUser();
             await _orderRepository.UpdateAsync(order);
             
-            //TODO: Fazer novo endpoint, que vai servir pro "botão" finalizar (pedido), para que esse outro endpoint possa fazer todos esses calculos do helper anterior
-
-            return NoContent();
+            var result = _mapper.Map<OrderReadModel>(order);
+            return StatusCode(201, result);
         }
         catch (Exception e)
         {
@@ -245,14 +336,13 @@ public class OrderController : CoreController
     /// </summary>
     /// <param name="id">Id do pedido</param>
     /// <param name="requestModel">Modelo de dados de entrada</param>
-    /// <response code="204">Sucesso</response>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPost("{id}/finalize")]
-    [Authorize(Policy.User)]
-    [ProducesResponseType(204)]
+    [Authorize(Policy.USER)]
+    [ProducesResponseType(200)]
     public async Task<IActionResult> FinalizeOrder([FromRoute] int id, [FromBody] FinalizeOrderRequestModel requestModel)
     {
         try
@@ -283,7 +373,7 @@ public class OrderController : CoreController
             //Helper para verificar status e forma de pagamento, para fazer os cálculos devidos
             await _orderHelper.UpdateCalculatePaymentsOrder(contextUser, order, requestModel, customerPerson);
 
-            return NoContent();
+            return Ok(order);
         }
         catch (Exception e)
         {
@@ -301,7 +391,7 @@ public class OrderController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPost("{id}/cancel")]
-    [Authorize(Policy.User)]
+    [Authorize(Policy.USER)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> CancelOrder([FromRoute] int id)
     {
@@ -320,12 +410,13 @@ public class OrderController : CoreController
             order.UpdatedAt = DateTime.UtcNow;
             order.UpdatedBy = contextUser.GetCurrentUser();
             await _orderRepository.UpdateAsync(order);
+
+            return NoContent();
         }
         catch (Exception e)
         {
-            LoggerBadRequest(e, _logger);
+            return LoggerBadRequest(e, _logger);
         }
-        return NoContent();
     }
 
     /// <summary>
@@ -333,13 +424,13 @@ public class OrderController : CoreController
     /// </summary>
     /// <remarks>Deleta um pedido</remarks>
     /// <param name="id">Id do pedido</param>
-    /// <response code="204">Sucesso</response>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
     [HttpDelete("{id}")]
-    [Authorize(Policy.User)]
-    [ProducesResponseType(204)]
+    [Authorize(Policy.USER)]
+    [ProducesResponseType(200)]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
@@ -350,14 +441,33 @@ public class OrderController : CoreController
             if (order == null)
                 return NotFound("Pedido não encontrado");
 
+            if (order.Status == OrderStatus.Finished)
+                return BadRequest("Não é possível excluir um pedido finalizado");
+
+            //No caso de exclusao do pedido, reverter as alterações do produto relacionados a quantidade e disponibilidade
+            if (order.Products != null)
+            {
+                foreach ( var orderProduct in order.Products)
+                {
+                    var product = await _productRepository.GetProductByIdAsync(contextUser, orderProduct.ProductId);
+                    if (product is null)
+                        return NotFound("Produto não encontrado");
+
+                    product.Quantity += orderProduct.Quantity;
+                    if (product.Quantity > 0) { product.Disponibility = true; }
+
+                    await _productRepository.UpdateAsync(product);
+                }
+            }
+
             order.IsDeleted = true;
             order.Status = OrderStatus.Excluded;
-            order.UpdatedAt = DateTime.Now;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
             order.UpdatedBy = contextUser.GetCurrentUser();
 
             await _orderRepository.UpdateAsync(order);
 
-            return NoContent();
+            return Ok(order);
         }
         catch (Exception e)
         {

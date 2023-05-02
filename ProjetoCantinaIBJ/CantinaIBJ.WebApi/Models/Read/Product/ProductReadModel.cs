@@ -27,5 +27,5 @@ public class ProductReadModel : BaseReadModel
     /// <summary>
     /// Disponiblidade do produto em estoque
     /// </summary>
-    public bool Diponibility { get; set; }
+    public bool Disponibility { get; set; }
 }

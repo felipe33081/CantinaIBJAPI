@@ -14,10 +14,15 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
 
     }
 
-    public async Task<ListDataPagination<CustomerPerson>> GetListCustomerPersons(UserContext contextUser,
-        string searchString,
-        int page,
-        int size)
+    public async Task<int> GetCountList()
+    {
+        int totalCount;
+        return totalCount = Context.CustomerPerson
+            .Where(x => x.IsDeleted == false)
+            .Count();
+    }
+
+    public async Task<ListDataPagination<CustomerPerson>> GetListCustomerPersons(UserContext contextUser, int page, int size, string? name, string? email, string? searchString, bool isDeleted, string? orderBy)
     {
         var query = Context.CustomerPerson
             .Where(x => x.IsDeleted == false);
@@ -30,16 +35,79 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
             q.Phone.ToLower().Contains(searchString));
         }
 
+        if (!string.IsNullOrEmpty(name))
+        {
+            query = query.Where(q => q.Name.ToLower().Contains(name));
+        }
+
+        if (!string.IsNullOrEmpty(email))
+        {
+            query = query.Where(q => q.Email.ToLower().Contains(email));
+        }
+
+        if (isDeleted)
+            query = query.Where(q => q.IsDeleted == true);
+
+        if (!string.IsNullOrEmpty(orderBy))
+        {
+            switch (orderBy)
+            {
+                case "id_DESC":
+                    query = query.OrderByDescending(t => t.Id);
+                    break;
+                case "id_ASC":
+                    query = query.OrderBy(t => t.Id);
+                    break;
+                case "name_DESC":
+                    query = query.OrderByDescending(t => t.Name);
+                    break;
+                case "name_ASC":
+                    query = query.OrderBy(t => t.Name);
+                    break;
+                case "balance_DESC":
+                    query = query.OrderByDescending(t => t.Balance);
+                    break;
+                case "balance_ASC":
+                    query = query.OrderBy(t => t.Balance);
+                    break;
+                case "phone_DESC":
+                    query = query.OrderByDescending(t => t.Phone);
+                    break;
+                case "phone_ASC":
+                    query = query.OrderBy(t => t.Phone);
+                    break;
+                case "email_DESC":
+                    query = query.OrderByDescending(t => t.Email);
+                    break;
+                case "email_ASC":
+                    query = query.OrderBy(t => t.Email);
+                    break;
+                case "createdAt_DESC":
+                    query = query.OrderByDescending(t => t.CreatedAt);
+                    break;
+                case "createdAt_ASC":
+                    query = query.OrderBy(t => t.CreatedAt);
+                    break;
+                case "createdBy_DESC":
+                    query = query.OrderByDescending(t => t.CreatedBy);
+                    break;
+                case "createdBy_ASC":
+                    query = query.OrderBy(t => t.CreatedBy);
+                    break;
+            }
+        }
+
         var data = new ListDataPagination<CustomerPerson>
         {
             Page = page,
             TotalItems = await query.CountAsync()
         };
+
         data.TotalPages = (int)Math.Ceiling((double)data.TotalItems / size);
 
-        data.Data = await query.Skip(size * page)
+        data.Data = await query
+            .Skip(size * page)
             .Take(size)
-            .AsNoTracking()
             .ToListAsync();
 
         return data;

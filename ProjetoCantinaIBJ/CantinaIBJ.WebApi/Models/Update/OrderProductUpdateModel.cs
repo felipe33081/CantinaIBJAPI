@@ -10,4 +10,5 @@ public class OrderProductUpdateModel
     /// Quantidade do produto
     /// </summary>
     public int Quantity { get; set; }
+
 }

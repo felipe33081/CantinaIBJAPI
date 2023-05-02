@@ -1,4 +1,5 @@
 ﻿using CantinaIBJ.WebApi.Common;
+using CantinaIBJ.WebApi.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 

@@ -62,7 +62,10 @@ namespace CantinaIBJ.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CustomerPerson");
+                    b.HasIndex("Name", "Phone")
+                        .IsUnique();
+
+                    b.ToTable("CustomerPerson", (string)null);
                 });
 
             modelBuilder.Entity("CantinaIBJ.Model.OrderProduct", b =>
@@ -156,7 +159,7 @@ namespace CantinaIBJ.Data.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<bool>("Diponibility")
+                    b.Property<bool>("Disponibility")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsDeleted")
@@ -229,54 +232,6 @@ namespace CantinaIBJ.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ProductHistoric");
-                });
-
-            modelBuilder.Entity("CantinaIBJ.Model.User.User", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Group")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("User");
                 });
 
             modelBuilder.Entity("CantinaIBJ.Model.OrderProduct", b =>

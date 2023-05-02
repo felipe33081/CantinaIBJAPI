@@ -16,7 +16,5 @@ public class UserRequestModel
     /// Senha do usuário
     /// </summary>
     [Required(ErrorMessage = "O campo {0} é obrigatório")]
-    [RegularExpression("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\da-zA-Z]).{8,}$",
-        ErrorMessage = "A senha deve ter pelo menos 8 caracteres, uma letra maiúscula, uma letra minúscula, um número e um caractere especial.")]
     public string Password { get; set; }
 }

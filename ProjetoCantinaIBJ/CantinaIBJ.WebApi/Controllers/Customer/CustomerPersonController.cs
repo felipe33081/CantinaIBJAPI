@@ -7,11 +7,15 @@ using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Models.Create.Customer;
 using CantinaIBJ.WebApi.Models.Read.Customer;
+using CantinaIBJ.WebApi.Models.Read.Order;
 using CantinaIBJ.WebApi.Models.Read.Product;
 using CantinaIBJ.WebApi.Models.Update.Customer;
 using CantinaIBJ.WebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Xml.Linq;
+using static CantinaIBJ.WebApi.Common.Constants;
 
 namespace CantinaIBJ.WebApi.Controllers.Customer;
 
@@ -42,35 +46,46 @@ public class CustomerPersonController : CoreController
     /// </summary>
     /// <param name="page"></param>
     /// <param name="size"></param>
+    /// <param name="name"></param>
+    /// <param name="email"></param>
     /// <param name="searchString"></param>
+    /// <param name="isDeleted"></param>
+    /// <param name="orderBy"></param>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     [HttpGet]
-    [Authorize(Policy.User)]
+    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(ListDataPagination<CustomerPersonReadModel>), 200)]
-    public async Task<IActionResult> ListAsync([FromQuery] int page = 0, [FromQuery] int size = 10,
-        [FromQuery] string? searchString = null)
+    public async Task<IActionResult> ListAsync([FromQuery] int page = 0,
+        [FromQuery] int size = 10,
+        [FromQuery] string? name = null,
+        [FromQuery] string? email = null,
+        [FromQuery] string? searchString = null,
+        [FromQuery] bool isDeleted = false,
+        [FromQuery] string? orderBy = null)
     {
         try
         {
             var contextUser = _userContext.GetContextUser();
 
-            ListDataPagination<CustomerPerson> listData = await _customerPersonRepository.GetListCustomerPersons(contextUser, searchString, page, size);
+            var customers = await _customerPersonRepository.GetListCustomerPersons(contextUser, page, size, name, email, searchString, isDeleted, orderBy);
 
-            var newData = new ListDataPagination<CustomerPersonReadModel>
+            var newData = new ListDataPagination<CustomerPersonReadModel>()
             {
-                Data = listData.Data.Select(c => _mapper.Map<CustomerPersonReadModel>(c)).ToList(),
+                Data = customers.Data.Select(c => _mapper.Map<CustomerPersonReadModel>(c)).ToList(),
                 Page = page,
-                TotalItems = listData.TotalItems,
-                TotalPages = listData.TotalPages
+                TotalItems = customers.TotalItems,
+                TotalPages = customers.TotalPages
             };
+
+            Response.Headers.Add("X-Total-Count", customers.TotalItems.ToString());
 
             return Ok(newData);
         }
         catch (Exception e)
         {
-            throw e;
+            return LoggerBadRequest(e, _logger);
         }
     }
 
@@ -81,8 +96,9 @@ public class CustomerPersonController : CoreController
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
     [HttpGet("{id}")]
-    [Authorize(Policy.User)]
+    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(CustomerPersonReadModel), 200)]
     public async Task<IActionResult> GetById([FromRoute] int id)
     {
@@ -107,12 +123,12 @@ public class CustomerPersonController : CoreController
     /// <summary>
     /// Cria um novo registro de um cliente
     /// </summary>
-    /// <param name="model">Modelo de dados de entrada</param>
+    /// <param name="model">Modelo de dados de entrada</param>#e0e1dd
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     [HttpPost]
-    [Authorize(Policy.User)]
+    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(Guid), 200)]
     public async Task<IActionResult> Create([FromBody] CustomerPersonCreateModel model)
     {
@@ -122,6 +138,8 @@ public class CustomerPersonController : CoreController
         try
         {
             var contextUser = _userContext.GetContextUser();
+
+            //dar get no cliente pelo nome, e verificar se existe mais com o isDeleted True, dai só tira o isdeleted e mapea os nos atributos do modelo
 
             var customerPerson = _mapper.Map<CustomerPerson>(model);
             await _customerPersonRepository.AddCustomerPersonAsync(contextUser, customerPerson);
@@ -139,15 +157,14 @@ public class CustomerPersonController : CoreController
     /// </summary>
     /// <param name="id">Id do cliente</param>
     /// <param name="updateModel">Modelo de dados de entrada</param>
-    /// <response code="204">Sucesso</response>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}")]
-    [Authorize(Policy.Admin)]
-    [ProducesResponseType(204)]
-    public async Task<IActionResult> Update([FromRoute] int id, 
-                                            [FromBody] CustomerPersonUpdateModel updateModel)
+    [Authorize(Policy.ADMIN)]
+    [ProducesResponseType(200)]
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] CustomerPersonUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
             return NotFound("Modelo não é válido");
@@ -157,15 +174,17 @@ public class CustomerPersonController : CoreController
             var contextUser = _userContext.GetContextUser();
 
             var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
+            if (customerPerson is null)
+                return NotFound("Cliente não encontrado");
 
             _mapper.Map(updateModel, customerPerson);
 
-            customerPerson.UpdatedAt = DateTime.Now;
+            customerPerson.UpdatedAt = DateTime.UtcNow;
             customerPerson.UpdatedBy = contextUser.GetCurrentUser();
 
             await _customerPersonRepository.UpdateAsync(customerPerson);
 
-            return NoContent();
+            return Ok(customerPerson);
         }
         catch (Exception e)
         {
@@ -177,13 +196,13 @@ public class CustomerPersonController : CoreController
     /// Exclui um registro de um cliente
     /// </summary>
     /// <param name="id">Id do cliente</param>
-    /// <response code="204">Sucesso</response>
     /// <response code="400">Modelo inválido</response>
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
     [HttpDelete("{id}")]
-    [Authorize(Policy.Admin)]
-    [ProducesResponseType(204)]
+    [Authorize(Policy.ADMIN)]
+    [ProducesResponseType(200)]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
@@ -195,12 +214,12 @@ public class CustomerPersonController : CoreController
                 return NotFound("Cliente não encontrado");
 
             customerPerson.IsDeleted = true;
-            customerPerson.UpdatedAt = DateTime.Now;
+            customerPerson.UpdatedAt = DateTimeOffset.UtcNow;
             customerPerson.UpdatedBy = contextUser.GetCurrentUser();
 
             await _customerPersonRepository.UpdateAsync(customerPerson);
 
-            return NoContent();
+            return Ok(customerPerson);
         }
         catch (Exception e)
         {

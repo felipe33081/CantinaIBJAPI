@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CantinaIBJ.Data", "CantinaI
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CantinaIBJ.Model", "CantinaIBJ.Model\CantinaIBJ.Model.csproj", "{DFF19A18-50FA-4B4D-B4A5-8D55FA4E3202}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CantinaIBJ.Framework", "CantinaIBJ.Framework\CantinaIBJ.Framework.csproj", "{B3B236A9-5221-4AF6-ADB7-2523352DA0EB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CantinaIBJ.Integration", "CantinaIBJ.Integration\CantinaIBJ.Integration.csproj", "{8238DE91-C841-4B48-A134-DC1EAD0B2D5E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{DFF19A18-50FA-4B4D-B4A5-8D55FA4E3202}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DFF19A18-50FA-4B4D-B4A5-8D55FA4E3202}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DFF19A18-50FA-4B4D-B4A5-8D55FA4E3202}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3B236A9-5221-4AF6-ADB7-2523352DA0EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3B236A9-5221-4AF6-ADB7-2523352DA0EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3B236A9-5221-4AF6-ADB7-2523352DA0EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3B236A9-5221-4AF6-ADB7-2523352DA0EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8238DE91-C841-4B48-A134-DC1EAD0B2D5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8238DE91-C841-4B48-A134-DC1EAD0B2D5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8238DE91-C841-4B48-A134-DC1EAD0B2D5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8238DE91-C841-4B48-A134-DC1EAD0B2D5E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
