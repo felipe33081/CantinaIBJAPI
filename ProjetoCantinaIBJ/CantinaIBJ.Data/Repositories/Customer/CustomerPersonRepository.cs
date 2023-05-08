@@ -122,6 +122,15 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
         return query;
     }
 
+    public async Task<CustomerPerson> GetCustomerPersonByNameAsync(UserContext user, string name)
+    {
+        var query = await Context.CustomerPerson
+            .Where(x => x.Name.ToLower() == name)
+            .FirstOrDefaultAsync();
+
+        return query;
+    }
+
     public async Task AddCustomerPersonAsync(UserContext user, CustomerPerson customerPerson)
     {
         customerPerson.CreatedBy = user.GetCurrentUser();

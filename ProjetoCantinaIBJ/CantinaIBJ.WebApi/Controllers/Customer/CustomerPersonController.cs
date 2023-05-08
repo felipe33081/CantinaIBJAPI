@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
+using CantinaIBJ.Data.Contracts;
 using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Model;
 using CantinaIBJ.Model.Customer;
+using CantinaIBJ.Model.Enumerations;
 using CantinaIBJ.Model.Orders;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
@@ -28,17 +30,20 @@ public class CustomerPersonController : CoreController
     readonly IMapper _mapper;
     readonly ILogger<CustomerPersonController> _logger;
     readonly HttpUserContext _userContext;
+    readonly IOrderRepository _orderRepository;
 
     public CustomerPersonController(
         IMapper mapper,
         ILogger<CustomerPersonController> logger,
         ICustomerPersonRepository customerPersonRepository,
-        HttpUserContext userContext)
+        HttpUserContext userContext,
+        IOrderRepository orderRepository)
     {
         _mapper = mapper;
         _logger = logger;
         _customerPersonRepository = customerPersonRepository;
         _userContext = userContext;
+        _orderRepository = orderRepository;
     }
 
     /// <summary>
@@ -69,7 +74,12 @@ public class CustomerPersonController : CoreController
         {
             var contextUser = _userContext.GetContextUser();
 
-            var customers = await _customerPersonRepository.GetListCustomerPersons(contextUser, page, size, name, email, searchString, isDeleted, orderBy);
+            var nameLowed = string.Empty; 
+            var emailLowed = string.Empty;
+            if (!string.IsNullOrEmpty(name)) { nameLowed = name?.ToLower(); }
+            if (!string.IsNullOrEmpty(email)) { emailLowed = email?.ToLower(); }
+
+            var customers = await _customerPersonRepository.GetListCustomerPersons(contextUser, page, size, nameLowed, emailLowed, searchString, isDeleted, orderBy);
 
             var newData = new ListDataPagination<CustomerPersonReadModel>()
             {
@@ -108,7 +118,7 @@ public class CustomerPersonController : CoreController
 
             var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
             if (customerPerson == null)
-                return NotFound("Cliente não encontrado");
+                return NotFound(new { errors = "Cliente não encontrado" });
 
             var readCustomerPerson = _mapper.Map<CustomerPersonReadModel>(customerPerson);
 
@@ -133,18 +143,40 @@ public class CustomerPersonController : CoreController
     public async Task<IActionResult> Create([FromBody] CustomerPersonCreateModel model)
     {
         if (!ModelState.IsValid)
-            return NotFound("Modelo não é válido");
+            return NotFound(new { errors = "Modelo não é válido" });
 
         try
         {
             var contextUser = _userContext.GetContextUser();
 
-            //dar get no cliente pelo nome, e verificar se existe mais com o isDeleted True, dai só tira o isdeleted e mapea os nos atributos do modelo
+            CustomerPerson customer;
+            var nameLowed = model.Name.ToLower();
+            customer = await _customerPersonRepository.GetCustomerPersonByNameAsync(contextUser, nameLowed);
+            if (customer != null)
+            {
+                if (customer.IsDeleted == false)
+                    return StatusCode(400, new { errors = "Não foi possível criar usuário, já existe um com o mesmo nome" });
 
-            var customerPerson = _mapper.Map<CustomerPerson>(model);
-            await _customerPersonRepository.AddCustomerPersonAsync(contextUser, customerPerson);
+                customer.Phone = model.Phone;
+                customer.Balance = 0;
+                customer.UpdatedAt = null;
+                customer.UpdatedBy = null;
+                customer.CreatedAt = DateTime.UtcNow;
+                customer.CreatedBy = contextUser.Name;
+                customer.IsDeleted = false;
+                customer.Email = string.Empty;
+                if (!string.IsNullOrEmpty(model.Email))
+                    customer.Email = model.Email;
 
-            return Ok(customerPerson.Id);
+                await _customerPersonRepository.SaveChangesAsync();
+            }
+            else
+            {
+                customer = _mapper.Map<CustomerPerson>(model);
+                await _customerPersonRepository.AddCustomerPersonAsync(contextUser, customer);
+            }
+
+            return Ok(customer.Id);
         }
         catch (Exception e)
         {
@@ -175,7 +207,7 @@ public class CustomerPersonController : CoreController
 
             var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
             if (customerPerson is null)
-                return NotFound("Cliente não encontrado");
+                return NotFound(new { errors = "Cliente não encontrado" });
 
             _mapper.Map(updateModel, customerPerson);
 
@@ -184,7 +216,7 @@ public class CustomerPersonController : CoreController
 
             await _customerPersonRepository.UpdateAsync(customerPerson);
 
-            return Ok(customerPerson);
+            return NoContent();
         }
         catch (Exception e)
         {
@@ -211,7 +243,13 @@ public class CustomerPersonController : CoreController
 
             var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
             if (customerPerson == null)
-                return NotFound("Cliente não encontrado");
+                return NotFound(new { errors = "Cliente não encontrado" });
+
+            if (_orderRepository.GetAllByCustomerId(id).Any(x => x.Status == OrderStatus.InProgress && x.IsDeleted == false))
+                return StatusCode(400, new { errors = "Não é possível excluir cliente com pedidos em andamento" });
+
+            if (customerPerson.Balance != 0)
+                return StatusCode(400, new { errors = "Não é possível excluir cliente que tenha pendências no saldo" });
 
             customerPerson.IsDeleted = true;
             customerPerson.UpdatedAt = DateTimeOffset.UtcNow;
@@ -219,7 +257,7 @@ public class CustomerPersonController : CoreController
 
             await _customerPersonRepository.UpdateAsync(customerPerson);
 
-            return Ok(customerPerson);
+            return NoContent();
         }
         catch (Exception e)
         {

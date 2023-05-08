@@ -14,7 +14,6 @@ public class CustomerPersonCreateModel : BaseCreateModel
     /// <summary>
     /// E-mail do cliente
     /// </summary>
-    [EmailAddress(ErrorMessage = "Digite um e-mail válido")]
     public string? Email { get; set; }
 
     /// <summary>

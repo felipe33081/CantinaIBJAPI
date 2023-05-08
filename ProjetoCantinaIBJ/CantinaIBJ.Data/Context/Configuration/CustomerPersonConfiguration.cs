@@ -15,8 +15,5 @@ internal class CustomerPersonConfiguration : IEntityTypeConfiguration<CustomerPe
 
         builder
             .HasKey(k => k.Id);
-
-        builder
-            .HasIndex(k => new { k.Name, k.Phone }).IsUnique();
     }
 }

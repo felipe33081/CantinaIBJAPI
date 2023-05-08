@@ -24,6 +24,19 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
             .Count();
     }
 
+    public List<Order> GetAll()
+    {
+        return Context.Order.ToList();
+    }
+
+    public List<Order> GetAllByCustomerId(int id)
+    {
+        return Context.Order
+            .Include(x => x.CustomerPerson)
+            .Where(x => x.CustomerPerson.Id == id)
+            .ToList();
+    }
+
     public async Task<ListDataPagination<Order>> GetListOrders(UserContext contextUser, int page, int size, string? searchString, bool isDeleted, string? orderBy, OrderStatus? status)
     {
         var query = Context.Order
