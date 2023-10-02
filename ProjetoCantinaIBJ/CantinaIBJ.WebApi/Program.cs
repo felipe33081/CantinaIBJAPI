@@ -263,10 +263,3 @@ app.Run();
 
 // Configuração para ignorar validação de certificado SSL/TLS
 ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
-
-//app.UseCors(options =>
-//{
-//    options.WithOrigins("http://localhost:3000")
-//    .AllowAnyMethod()
-//    .AllowAnyHeader();
-//});

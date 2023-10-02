@@ -20,10 +20,10 @@ public interface ICognitoCommunication
 
     #region Users
 
-    Task<ListDataPagination<UserGetResponseModel>> GetUsersAsync(int page, int size, string userPoolId, string? filter = null);
+    Task<ListDataPagination<UserGetResponseModel>> GetUsersAsync(string paginationToken, int page, int size, string userPoolId, string filter = null);
     Task<UserGetResponseModel> GetUserAsync(string id, string userPoolId);
     Task<string> GetUserSub(string userName, string userPoolId);
-    Task<List<UserGroupResponseModel>> GetUserGroupsAsync(string id, string userPoolId, int _start, int _end);
+    Task<ListDataPagination<UserGroupResponseModel>> GetUserGroupsAsync(string id, string userPoolId, int page, int size);
     Task<UserPostResponseModel> CreateUserAsync(UserPostRequestModel model, string userPoolId, MessageActionType messageActionType);
     Task UpdateUserAsync(string userId, UserPutRequestModel model, string userPoolId);
     Task SetEmailVerified(string userId, string userPoolId);

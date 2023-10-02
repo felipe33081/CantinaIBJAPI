@@ -2,10 +2,14 @@
 using CantinaIBJ.Integration.Cognito;
 using CantinaIBJ.Integration.Cognito.Model.User;
 using CantinaIBJ.Model;
+using CantinaIBJ.Model.Enumerations;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
+using CantinaIBJ.WebApi.Helpers;
+using CantinaIBJ.WebApi.Models;
 using CantinaIBJ.WebApi.Models.Read.Customer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using static CantinaIBJ.WebApi.Common.Constants;
@@ -34,9 +38,10 @@ public class UsersController : CoreController
     /// <summary>
     /// Obtém uma lista de usuários
     /// </summary>
-    /// <param name="page"></param>
-    /// <param name="size"></param>
-    /// <param name="searchString"><br/><b>Atributos permitidos</b>:<br/>username; <br/>email; <br/>phone_number; <br/>name; <br/>given_name; <br/>family_name; <br/>preferred_username; <br/>cognito:user_status; <br/>status; <br/>sub.<br/><br/> <code>Exemplo de uso: username ^= "user"</code></param>
+    /// <param name="paginationToken">Token de paginação</param>
+    /// <param name="page">Número da página</param>
+    /// <param name="size">Total de itens retornados</param>
+    /// <param name="filter"><br/><b>Atributos permitidos</b>:<br/>username; <br/>email; <br/>phone_number; <br/>name; <br/>given_name; <br/>family_name; <br/>preferred_username; <br/>cognito:user_status; <br/>status; <br/>sub.<br/><br/> <code>Exemplo de uso: username ^= "user"</code></param>
     /// <returns></returns>
     [HttpGet()]
     [Authorize(Policy.MASTERADMIN)]
@@ -45,19 +50,15 @@ public class UsersController : CoreController
     [ProducesResponseType(401)]
     [ProducesResponseType(403)]
     [ProducesResponseType(500)]
-    public async Task<IActionResult> GetUsersAsync([FromQuery] int page = 0,
-        [FromQuery] int size = 10,
-        [FromQuery] string? filter = null)
+    public async Task<IActionResult> GetUsersAsync(int page, int size, string? filter, string? paginationToken)
     {
+        if (paginationToken is not null) paginationToken = FixPaginationToken(paginationToken);
+
         try
         {
             var contextUser = _userContext.GetContextUser();
 
-            var users = await _cognitoClient.GetUsersAsync(page, size, GetPoolId(), filter);
-
-            Response.Headers.Add("X-Total-Count", users.TotalItems.ToString());
-
-            return Ok(users);
+            return Ok(await _cognitoClient.GetUsersAsync(paginationToken, page, size, GetPoolId(), filter));
         }
         catch (Exception ex)
         {
@@ -65,6 +66,8 @@ public class UsersController : CoreController
             return InvalidBusinessRules(ex.GetFriendlyException());
         }
     }
+
+    public static string FixPaginationToken(string value) => value.Replace(" ", "+");
 
     /// <summary>
     /// Obtém dados de um usuário
@@ -96,23 +99,23 @@ public class UsersController : CoreController
     /// Obtém grupos de um usuário
     /// </summary>
     /// <param name="id">ID do usuário</param>
-    /// <param name="_start"></param>
-    /// <param name="_end"></param>
+    /// <param name="page">Número da página</param>
+    /// <param name="size">Total de itens retornados</param>
     /// <returns></returns>
     [HttpGet("{id}/Groups")]
     [Authorize(Policy.MASTERADMIN)]
-    [ProducesResponseType(typeof(UserGetDetailResponseModel), 200)]
+    [ProducesResponseType(typeof(ListDataPagination<UserGroupResponseModel>), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
     [ProducesResponseType(403)]
     [ProducesResponseType(500)]
-    public async Task<IActionResult> GetUserGroupsAsync([FromRoute] string id, [FromQuery] int _start = 0, [FromQuery] int _end = 10)
+    public async Task<IActionResult> GetUserGroupsAsync(string id, [FromQuery] int page = 0, [FromQuery] int size = 5)
     {
         try
         {
             var contextUser = _userContext.GetContextUser();
 
-            return Ok(await _cognitoClient.GetUserGroupsAsync(id, GetPoolId(), _start, _end));
+            return Ok(await _cognitoClient.GetUserGroupsAsync(id, GetPoolId(), page, size));
         }
         catch (Exception ex)
         {
@@ -137,6 +140,11 @@ public class UsersController : CoreController
         try
         {
             var contextUser = _userContext.GetContextUser();
+
+            if (!string.IsNullOrEmpty(inputModel.PhoneNumber))
+            {
+                inputModel.PhoneNumber = inputModel.PhoneNumber.Replace("(", "").Replace(")", "").Replace("-", "").Replace(" ", "");
+            }
 
             if (!inputModel.PhoneNumber.StartsWith("+55"))
                 inputModel.PhoneNumber = "+55" + inputModel.PhoneNumber;
@@ -167,15 +175,71 @@ public class UsersController : CoreController
         {
             var contextUser = _userContext.GetContextUser();
 
+            if (!string.IsNullOrEmpty(inputModel.PhoneNumber))
+            {
+                inputModel.PhoneNumber = inputModel.PhoneNumber.Replace("(", "").Replace(")", "").Replace("-", "").Replace(" ", "");
+            }
+
             if (inputModel.PhoneNumber is not null && !inputModel.PhoneNumber.StartsWith("+55"))
                 inputModel.PhoneNumber = "+55" + inputModel.PhoneNumber;
              
             await _cognitoClient.UpdateUserAsync(userId, inputModel, GetPoolId());
 
-            if (!string.IsNullOrEmpty(inputModel.GroupName) && !string.IsNullOrEmpty(inputModel.AddOrRemove) && inputModel.AddOrRemove?.ToLower() == "add")
-                await _cognitoClient.AddtUserToAnExistingGroupAsync(GetPoolId(), inputModel.GroupName, userId);
-            if (!string.IsNullOrEmpty(inputModel.GroupName) && !string.IsNullOrEmpty(inputModel.AddOrRemove) && inputModel.AddOrRemove?.ToLower() == "remove")
-                await _cognitoClient.RemoveUserFromAnExistingGroupAsync(GetPoolId(), inputModel.GroupName, userId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            return InvalidBusinessRules(ex.GetFriendlyException());
+        }
+    }
+
+    /// <summary>
+    /// Edita um usuário
+    /// </summary>
+    [HttpPut("{userId}/AddUserToGroup")]
+    [Authorize(Policy.MASTERADMIN)]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(500)]
+    [Consumes("application/json")]
+    public async Task<IActionResult> AddUserToGroupAsync([FromRoute] string userId, [FromBody] GroupRequestModel request)
+    {
+        try
+        {
+            var contextUser = _userContext.GetContextUser();
+
+            await _cognitoClient.AddtUserToAnExistingGroupAsync(GetPoolId(), request.GroupName, userId);
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            return InvalidBusinessRules(ex.GetFriendlyException());
+        }
+    }
+
+    /// <summary>
+    /// Edita um usuário
+    /// </summary>
+    [HttpPut("{userId}/RemoveUserToGroup")]
+    [Authorize(Policy.MASTERADMIN)]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(500)]
+    [Consumes("application/json")]
+    public async Task<IActionResult> RemoveUserToGroupAsync([FromRoute] string userId, [FromBody] GroupRequestModel request)
+    {
+        try
+        {
+            var contextUser = _userContext.GetContextUser();
+
+            await _cognitoClient.RemoveUserFromAnExistingGroupAsync(GetPoolId(), request.GroupName, userId);
 
             return NoContent();
         }

@@ -154,7 +154,8 @@ public class CognitoCommunication : ICognitoCommunication
 
     #region Users 
 
-    public async Task<ListDataPagination<UserGetResponseModel>> GetUsersAsync(int page, int size, string userPoolId, string? filter = null)
+    public async Task<ListDataPagination<UserGetResponseModel>> GetUsersAsync(string paginationToken,
+        int page, int size, string userPoolId, string filter = null)
     {
         var fixPagination = FixPagination(page, size);
 
@@ -167,6 +168,7 @@ public class CognitoCommunication : ICognitoCommunication
             {
                 UserPoolId = userPoolId,
                 AttributesToGet = new(),
+                PaginationToken = paginationToken,
                 Limit = fixPagination.Size,
                 Filter = filter
             });
@@ -176,10 +178,11 @@ public class CognitoCommunication : ICognitoCommunication
 
         return new ListDataPagination<UserGetResponseModel>
         {
-            Data = GetData(cognitoResponse.Users),
             Page = fixPagination.Page,
             TotalItems = totalUser,
-            TotalPages = (int)Math.Ceiling((double)totalUser / fixPagination.Size)
+            TotalPages = (int)Math.Ceiling((double)totalUser / fixPagination.Size),
+            PaginationToken = cognitoResponse.PaginationToken,
+            Data = GetData(cognitoResponse.Users)
         };
     }
 
@@ -222,30 +225,28 @@ public class CognitoCommunication : ICognitoCommunication
         return cognitoResponse.UserAttributes.Where(x => x.Name == "sub").FirstOrDefault()?.Value;
     }
 
-    public async Task<List<UserGroupResponseModel>> GetUserGroupsAsync(string id, string userPoolId, int _start, int _end)
+    public async Task<ListDataPagination<UserGroupResponseModel>> GetUserGroupsAsync(string id, string userPoolId, int page, int size)
     {
-        var response = new List<UserGroupResponseModel>();
+        var response = new ListDataPagination<UserGroupResponseModel>();
 
         var cognitoResponse = await _cognitoProviderClient
             .AdminListGroupsForUserAsync(new AdminListGroupsForUserRequest
             {
                 UserPoolId = userPoolId,
                 Username = id,
-                Limit = _end
+                Limit = size
             });
 
         if (cognitoResponse is not null)
         {
-            response = cognitoResponse.Groups.Select(g => new UserGroupResponseModel { GroupName = g.GroupName, Precedence = g.Precedence }).ToList();
+            response.Data = cognitoResponse.Groups.Select(g => new UserGroupResponseModel { GroupName = g.GroupName, Precedence = g.Precedence }).ToList();
+            response.TotalItems = page * size + cognitoResponse.Groups.Count;
+            response.Page = page;
+            response.TotalPages = (int)Math.Ceiling((double)((double)page * size + cognitoResponse.Groups.Count / (double)size));
         }
-
-        response.Skip(_start)
-                .Take(_end)
-                .ToList();
 
         return response;
     }
-
 
     public async Task<UserPostResponseModel> CreateUserAsync(UserPostRequestModel model, string userPoolId, MessageActionType messageActionType)
     {
