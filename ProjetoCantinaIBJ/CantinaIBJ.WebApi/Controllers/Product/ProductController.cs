@@ -108,7 +108,7 @@ public class ProductController : CoreController
 
             var product = await _productRepository.GetProductByIdAsync(contextUser, id);
             if (product == null)
-                return NotFound("Produto não encontrado");
+                return NotFound(new { errors = "Produto não encontrado" });
 
             var readProduct = _mapper.Map<ProductReadModel>(product);
 
@@ -134,7 +134,7 @@ public class ProductController : CoreController
     public async Task<IActionResult> Create([FromBody] ProductCreateModel model)
     {
         if (!ModelState.IsValid)
-            return NotFound("Modelo não é válido");
+            return NotFound(new { errors = "Modelo não é válido" });
 
         try
         {
@@ -170,7 +170,7 @@ public class ProductController : CoreController
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProductUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
-            return NotFound("Modelo não é válido");
+            return NotFound(new { errors = "Modelo não é válido" });
 
         try
         {
@@ -178,7 +178,7 @@ public class ProductController : CoreController
 
             var product = await _productRepository.GetProductByIdAsync(contextUser, id);
             if (product is null)
-                return NotFound("Produto não encontrado");
+                return NotFound(new { errors = "Produto não encontrado" });
 
             _mapper.Map(updateModel, product);
 
@@ -216,7 +216,7 @@ public class ProductController : CoreController
 
             var product = await _productRepository.GetProductByIdAsync(contextUser, id);
             if (product == null)
-                return NotFound("Produto não encontrado");
+                return NotFound(new { errors = "Produto não encontrado" });
 
             product.IsDeleted = true;
             product.UpdatedAt = DateTimeOffset.UtcNow;

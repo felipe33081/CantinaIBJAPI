@@ -199,7 +199,7 @@ public class CustomerPersonController : CoreController
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] CustomerPersonUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
-            return NotFound("Modelo não é válido");
+            return NotFound(new { errors = "Modelo não é válido" });
 
         try
         {

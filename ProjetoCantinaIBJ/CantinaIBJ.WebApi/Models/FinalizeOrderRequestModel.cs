@@ -8,6 +8,6 @@ namespace CantinaIBJ.WebApi.Models
         [Required(ErrorMessage = "O campo {0} é obrigatório")]
         public PaymentOfType PaymentOfType { get; set; }
 
-        public decimal PaymentValue { get; set; }
+        public decimal? PaymentValue { get; set; }
     }
 }

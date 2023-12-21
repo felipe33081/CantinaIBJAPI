@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CantinaIBJ.WebApi.Models.Create.Order;
 
+//ValidateOrderAttribute() para validar se nos produtos tem algum que tem id igual, retornar exception e tambem verificar se tem 0 produtos na lista de products
 public class OrderCreateModel : BaseCreateModel
 {
     /// <summary>

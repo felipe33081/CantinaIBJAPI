@@ -60,7 +60,8 @@ public class MapperProfile : Profile
         CreateMap<OrderProductCreateModel, OrderProduct>();
         CreateMap<OrderProductUpdateModel, OrderProduct>();
         CreateMap<OrderProduct, OrderProductReadModel>()
-            .ForMember(dst => dst.ProductDisplay, 
-                map => map.MapFrom(src => src.Product.Name));
+            .ForMember(dst => dst.ProductDisplay, map => map.MapFrom(src => src.Product.Name))
+            .ForMember(dst => dst.Name, map => map.MapFrom(src => src.Product.Name))
+            .ForMember(dst => dst.Description, map => map.MapFrom(src => src.Product.Description));
     }
 }

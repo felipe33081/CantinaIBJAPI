@@ -11,12 +11,9 @@ using CantinaIBJ.WebApi.Helpers;
 using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Models;
 using CantinaIBJ.WebApi.Models.Create.Order;
-using CantinaIBJ.WebApi.Models.Read.Customer;
 using CantinaIBJ.WebApi.Models.Read.Order;
 using CantinaIBJ.WebApi.Models.Update.Order;
-using CantinaIBJ.WebApi.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using static CantinaIBJ.WebApi.Common.Constants;
 
@@ -121,7 +118,7 @@ public class OrderController : CoreController
 
             var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
             if (order == null)
-                return NotFound("Pedido não encontrado");
+                return NotFound(new { errors = "Pedido não encontrado" });
 
             var readOrder = _mapper.Map<OrderReadModel>(order);
 
@@ -147,7 +144,7 @@ public class OrderController : CoreController
     public async Task<IActionResult> Create([FromBody] OrderCreateModel model)
     {
         if (!ModelState.IsValid)
-            return NotFound("Modelo não é válido");
+            return NotFound(new { errors = "Modelo não é válido" });
 
         try
         {
@@ -155,7 +152,10 @@ public class OrderController : CoreController
 
             //validação para ver se foi preenchido id de um cliente pré-cadastrado, ou se preencheu o nome do cliente, ou um ou outro, dar exceção se nao preencher nenhum
             if (model.CustomerPersonId == null && string.IsNullOrEmpty(model.CustomerName))
-                return BadRequest("Informar um cliente Pré-Cadastrado, Se não cadastro, informar somente o nome do cliente");
+                return BadRequest(new { errors = "Informar um cliente Pré-Cadastrado, Se não cadastro, informar somente o nome do cliente" });
+
+            if (model.Products is null || model.Products.Count <= 0)
+                return BadRequest(new { errors = "Produto é obrigatório" });
 
             var order = _mapper.Map<Order>(model);
 
@@ -163,7 +163,7 @@ public class OrderController : CoreController
             {
                 var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, model.CustomerPersonId.Value);
                 if (customerPerson == null)
-                    return NotFound("Cliente não encontrado");
+                    return NotFound(new { errors = "Cliente não encontrado" });
             }
 
             //faz a soma do preço dos itens com a quantidade, e atualizar no valor total do pedido
@@ -178,22 +178,23 @@ public class OrderController : CoreController
                         if (product.Disponibility)
                         {
                             product.Disponibility = false;
+                            await _productRepository.SaveChangesAsync();
                         }
-                        return BadRequest($"Não é possível adicionar o produto: {product.Name}, o mesmo não se encontra disponível");
+                        return BadRequest(new { errors = $"Não é possível adicionar o produto: {product.Name}, o mesmo não se encontra disponível" });
                     }
 
                     if (orderProduct.Quantity > product.Quantity)
-                        return BadRequest($"Não é possível adicionar uma quantidade maior do que a quantidade em estoque do produto: {product.Name}");
+                        return BadRequest(new { errors = $"Não é possível adicionar uma quantidade maior do que a quantidade em estoque do produto: {product.Name}" });
 
                     product.Quantity -= orderProduct.Quantity;
-                    await _productRepository.UpdateAsync(product);
+                    await _productRepository.UpdateAsync(product);//ATUALIZAR A QUANTIDADE DO PRIMEIRO PRODUTO, E DEPOIS DAR ERRO NO SEGUNDO PRODUTO. NAO ESTÁ DESFAZENDO A ALTERAÇÃO NO PRIMEIRO PRODUTO
 
                     orderProduct.Price = product.Price;
                     var totalPriceProduct = orderProduct.Quantity * product.Price;
                     productsValues += totalPriceProduct;
                 }
                 else
-                    return BadRequest("Produto não encontrado");
+                    return BadRequest(new { errors = "Produto não encontrado" });
             }
 
             order.TotalValue = productsValues;
@@ -223,7 +224,7 @@ public class OrderController : CoreController
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] OrderUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
-            return NotFound("Modelo não é válido");
+            return NotFound(new { errors = "Modelo não é válido" });
 
         try
         {
@@ -231,16 +232,22 @@ public class OrderController : CoreController
 
             var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
             if (order == null)
-                return NotFound("Pedido não encontrado");
+                return NotFound(new { errors = "Pedido não encontrado" });
 
-            if (order.Status == OrderStatus.Canceled)
-                return BadRequest("O pedido está cancelado, não é possível atualizar");
+            if (updateModel.Products is null || updateModel.Products.Count <= 0)
+                return BadRequest(new { errors = "Produto é obrigatório" });
+
+            if (order.Status != OrderStatus.InProgress)
+                return BadRequest(new { errors = "O pedido não está em andamento, não é possível atualizar" });
+
+            //if (order.Status == OrderStatus.Canceled)
+            //    return BadRequest(new { errors = "O pedido está cancelado, não é possível atualizar" });
 
             if (updateModel.CustomerPersonId != null && updateModel.CustomerPersonId > 0)
             {
                 var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, updateModel.CustomerPersonId.Value);
                 if (customerPerson == null)
-                    return NotFound("Cliente não encontrado");
+                    return NotFound(new { errors = "Cliente não encontrado" });
             }
 
             
@@ -273,17 +280,17 @@ public class OrderController : CoreController
                             if (product.Disponibility)
                                 product.Disponibility = false;
 
-                            return BadRequest($"Não é possível adicionar o produto: {product.Name}, o mesmo não se encontra disponível");
+                            return BadRequest(new { errors = $"Não é possível adicionar o produto: {product.Name}, o mesmo não se encontra disponível" });
                         }
 
                         if (newItem.Quantity > product.Quantity)
-                            return BadRequest($"Não é possível adicionar uma quantidade maior do que a quantidade em estoque do produto: {product.Name}");
+                            return BadRequest(new { errors = $"Não é possível adicionar uma quantidade maior do que a quantidade em estoque do produto: {product.Name}" });
 
                         totalPriceProduct = newItem.Quantity * product.Price;
                         productsValues += totalPriceProduct;
                     }
                     else
-                        return BadRequest("Produto não encontrado");
+                        return BadRequest(new { errors = "Produto não encontrado" });
 
                     product.Quantity -= newItem.Quantity;
                     KeyValue keyValue = new() { Key = product.Id, Value = product.Price };
@@ -295,7 +302,7 @@ public class OrderController : CoreController
                     var product = await _productRepository.GetProductByIdAsync(contextUser, existingItem.ProductId);
                     if (product == null || product.Quantity + existingItem.Quantity < newItem.Quantity)
                     {
-                        return BadRequest();
+                        return BadRequest(new { errors = "Produto não existe ou não possui quantidade disponível" });
                     }
                     product.Quantity += existingItem.Quantity - newItem.Quantity;
                     existingItem.Quantity = newItem.Quantity;
@@ -340,10 +347,10 @@ public class OrderController : CoreController
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
-    [HttpPost("{id}/finalize")]
+    [HttpPost("{id}/finish")]
     [Authorize(Policy.USER)]
     [ProducesResponseType(200)]
-    public async Task<IActionResult> FinalizeOrder([FromRoute] int id, [FromBody] FinalizeOrderRequestModel requestModel)
+    public async Task<IActionResult> FinishOrder([FromRoute] int id, [FromBody] FinalizeOrderRequestModel requestModel)
     {
         try
         {
@@ -351,29 +358,29 @@ public class OrderController : CoreController
 
             var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
             if (order == null)
-                return NotFound("Pedido não encontrado");
+                return NotFound(new { errors = "Pedido não encontrado" });
 
             if (requestModel.PaymentOfType == PaymentOfType.Debitor && requestModel.PaymentValue > order.TotalValue)
-                return BadRequest("Valor do pagamento não pode ser maior do que o valor do pedido, para o tipo de pagamento escolhido");
+                return BadRequest(new { errors = "Valor do pagamento não pode ser maior do que o valor do pedido, para o tipo de pagamento escolhido" });
 
             if (requestModel.PaymentOfType == PaymentOfType.ExtraMoney && requestModel.PaymentValue < order.TotalValue)
-                return BadRequest("Valor do pagamento não pode ser menor do que o valor do pedido, para o tipo de pagamento escolhido");
+                return BadRequest(new { errors = "Valor do pagamento não pode ser menor do que o valor do pedido, para o tipo de pagamento escolhido" });
 
             if (order.Status != OrderStatus.InProgress)
-                return BadRequest("Só é possível finalizar um pedido em andamento");
+                return BadRequest(new { errors = "Só é possível finalizar um pedido em andamento" });
 
             CustomerPerson? customerPerson = null;
             if (order.CustomerPersonId != null && order.CustomerPersonId > 0)
             {
                 customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, order.CustomerPersonId.Value);
                 if (customerPerson == null)
-                    return NotFound("Cliente não encontrado");
+                    return NotFound(new { errors = "Cliente não encontrado" });
             }
 
             //Helper para verificar status e forma de pagamento, para fazer os cálculos devidos
             await _orderHelper.UpdateCalculatePaymentsOrder(contextUser, order, requestModel, customerPerson);
 
-            return Ok(order);
+            return NoContent();
         }
         catch (Exception e)
         {
@@ -401,10 +408,10 @@ public class OrderController : CoreController
 
             var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
             if (order is null)
-                return NotFound("Pedido não encontrado");
+                return NotFound(new { errors = "Pedido não encontrado" });
 
             if (order.Status != OrderStatus.InProgress)
-                return BadRequest("Só é possível cancelar um pedido em andamento");
+                return BadRequest(new { errors = "Só é possível cancelar um pedido em andamento" });
 
             order.Status = OrderStatus.Canceled;
             order.UpdatedAt = DateTime.UtcNow;
@@ -439,10 +446,10 @@ public class OrderController : CoreController
 
             var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
             if (order == null)
-                return NotFound("Pedido não encontrado");
+                return NotFound(new { errors = "Pedido não encontrado" });
 
             if (order.Status == OrderStatus.Finished)
-                return BadRequest("Não é possível excluir um pedido finalizado");
+                return BadRequest(new { errors = "Não é possível excluir um pedido finalizado" });
 
             //No caso de exclusao do pedido, reverter as alterações do produto relacionados a quantidade e disponibilidade
             if (order.Products != null)
@@ -451,10 +458,13 @@ public class OrderController : CoreController
                 {
                     var product = await _productRepository.GetProductByIdAsync(contextUser, orderProduct.ProductId);
                     if (product is null)
-                        return NotFound("Produto não encontrado");
+                        return NotFound(new { errors = "Produto não encontrado" });
 
                     product.Quantity += orderProduct.Quantity;
-                    if (product.Quantity > 0) { product.Disponibility = true; }
+                    if (product.Quantity > 0) 
+                    { 
+                        product.Disponibility = true; 
+                    }
 
                     await _productRepository.UpdateAsync(product);
                 }
@@ -467,7 +477,7 @@ public class OrderController : CoreController
 
             await _orderRepository.UpdateAsync(order);
 
-            return Ok(order);
+            return NoContent();
         }
         catch (Exception e)
         {
