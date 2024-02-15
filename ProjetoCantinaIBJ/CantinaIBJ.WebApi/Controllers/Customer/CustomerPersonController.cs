@@ -4,19 +4,13 @@ using CantinaIBJ.Data.Contracts.Customer;
 using CantinaIBJ.Model;
 using CantinaIBJ.Model.Customer;
 using CantinaIBJ.Model.Enumerations;
-using CantinaIBJ.Model.Orders;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Models.Create.Customer;
 using CantinaIBJ.WebApi.Models.Read.Customer;
-using CantinaIBJ.WebApi.Models.Read.Order;
-using CantinaIBJ.WebApi.Models.Read.Product;
 using CantinaIBJ.WebApi.Models.Update.Customer;
-using CantinaIBJ.WebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Xml.Linq;
 using static CantinaIBJ.WebApi.Common.Constants;
 
 namespace CantinaIBJ.WebApi.Controllers.Customer;
@@ -150,6 +144,19 @@ public class CustomerPersonController : CoreController
             var contextUser = _userContext.GetContextUser();
 
             CustomerPerson customer;
+
+            string phoneNumber = model.Phone.ToString();
+
+            // Defina sua expressão regular para validar números de telefone
+            string pattern = @"^(\([1-9]{2}\)\s?9[0-9]{4}-?[0-9]{4})$";
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, pattern))
+            {
+                throw new Exception("Por favor, insira um número de telefone válido.");
+            }
+
+            model.Phone = System.Text.RegularExpressions.Regex.Replace(model.Phone, @"[()\s-]", "");
+
             var nameLowed = model.Name.ToLower();
             customer = await _customerPersonRepository.GetCustomerPersonByNameAsync(contextUser, nameLowed);
             if (customer != null)
@@ -204,6 +211,18 @@ public class CustomerPersonController : CoreController
         try
         {
             var contextUser = _userContext.GetContextUser();
+
+            string phoneNumber = updateModel.Phone.ToString();
+
+            // Defina sua expressão regular para validar números de telefone
+            string pattern = @"^(\([1-9]{2}\)\s?9[0-9]{4}-?[0-9]{4})$";
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, pattern))
+            {
+                throw new Exception("Por favor, insira um número de telefone válido.");
+            }
+
+            updateModel.Phone = System.Text.RegularExpressions.Regex.Replace(updateModel.Phone, @"[()\s-]", "");
 
             var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
             if (customerPerson is null)

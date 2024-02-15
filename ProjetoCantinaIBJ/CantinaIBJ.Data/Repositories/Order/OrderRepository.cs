@@ -37,18 +37,23 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
             .ToList();
     }
 
-    public async Task<ListDataPagination<Order>> GetListOrders(UserContext contextUser, int page, int size, string? searchString, bool isDeleted, string? orderBy, OrderStatus? status)
+    public async Task<ListDataPagination<Order>> GetListOrders(UserContext contextUser, int page, int size, string? searchString, int? id, bool isDeleted, string? orderBy, OrderStatus? status)
     {
         var query = Context.Order
             .Include(x => x.CustomerPerson)
             .Include(x => x.Products).ThenInclude(o => o.Product)
-            .Where(x => x.IsDeleted == false);
+            .Where(c => c.IsDeleted == false);
 
         if (!string.IsNullOrEmpty(searchString))
         {
             searchString = searchString.ToLower().Trim();
             query = query.Where(q => q.CustomerPerson.Name.ToLower().Contains(searchString) ||
             q.CustomerName.ToLower().Contains(searchString));
+        }
+
+        if (id is not null)
+        {
+            query = query.Where(x => x.Id == id);
         }
 
         if (status != null)
@@ -96,7 +101,7 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         var query = await Context.Order
             .Include(x => x.CustomerPerson)
             .Include(x => x.Products).ThenInclude(c => c.Product)
-            .Where(x => x.IsDeleted == false)
+            .Where(c => c.IsDeleted == false)
             .SingleOrDefaultAsync(x => x.Id == id);
 
         return query;

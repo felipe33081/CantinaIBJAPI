@@ -1,7 +1,9 @@
 ﻿using CantinaIBJ.Data.Contracts;
 using CantinaIBJ.Data.Contracts.Customer;
+using CantinaIBJ.Data.Contracts.Dashboard;
 using CantinaIBJ.Data.Repositories;
 using CantinaIBJ.Data.Repositories.Customer;
+using CantinaIBJ.Data.Repositories.Dashboard;
 using CantinaIBJ.Integration.Cognito;
 using CantinaIBJ.Model.AppSettings;
 using CantinaIBJ.WebApi.Common;
@@ -23,6 +25,7 @@ public static class ServicesConfiguration
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IProductHistoricRepository, ProductHistoricRepository>();
+        services.AddScoped<IDashboardRepository, DashboardRepository>();
 
         return services;
     }

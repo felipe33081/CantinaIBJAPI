@@ -55,6 +55,8 @@ services.AddMvcCore()
 
 services.ConfigureRepositories();
 
+//services.ConfigureAuth();
+
 // configura autenticação jwt.
 services.AddAuthentication(options =>
 {

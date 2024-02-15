@@ -55,7 +55,7 @@ public class OrderHelper
                         break;
                     }
                     else
-                        throw new Exception("Não é possível vender para pagar depois, sem o cliente estar cadastrado no sistema");
+                        throw new Exception("Cliente não cadastrado, não pode vender fiado");
 
                 case PaymentOfType.ExtraMoney:
                     if (customerPerson != null)

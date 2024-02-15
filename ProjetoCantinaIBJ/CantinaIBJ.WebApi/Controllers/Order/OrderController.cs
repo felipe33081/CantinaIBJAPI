@@ -59,6 +59,7 @@ public class OrderController : CoreController
     /// <param name="page"></param>
     /// <param name="size"></param>
     /// <param name="searchString"></param>
+    /// <param name="id"></param>
     /// <param name="isDeleted"></param>
     /// <param name="orderBy"></param>
     /// /// <param name="status"></param>
@@ -71,6 +72,7 @@ public class OrderController : CoreController
     public async Task<IActionResult> ListAsync([FromQuery] int page = 0,
         [FromQuery] int size = 10,
         [FromQuery] string? searchString = null,
+        [FromQuery] int? id = null,
         [FromQuery] bool isDeleted = false,
         [FromQuery] string? orderBy = null,
         [FromQuery] OrderStatus? status = null)
@@ -79,7 +81,7 @@ public class OrderController : CoreController
         {
             var contextUser = _userContext.GetContextUser();
 
-            var orders = await _orderRepository.GetListOrders(contextUser, page, size, searchString, isDeleted, orderBy, status);
+            var orders = await _orderRepository.GetListOrders(contextUser, page, size, searchString, id, isDeleted, orderBy, status);
 
             var newData = new ListDataPagination<OrderReadModel>()
             {
@@ -178,7 +180,7 @@ public class OrderController : CoreController
                         if (product.Disponibility)
                         {
                             product.Disponibility = false;
-                            await _productRepository.SaveChangesAsync();
+                            var responseTesteView = await _productRepository.UpdateAsync(product);
                         }
                         return BadRequest(new { errors = $"Não é possível adicionar o produto: {product.Name}, o mesmo não se encontra disponível" });
                     }
@@ -187,7 +189,7 @@ public class OrderController : CoreController
                         return BadRequest(new { errors = $"Não é possível adicionar uma quantidade maior do que a quantidade em estoque do produto: {product.Name}" });
 
                     product.Quantity -= orderProduct.Quantity;
-                    await _productRepository.UpdateAsync(product);//ATUALIZAR A QUANTIDADE DO PRIMEIRO PRODUTO, E DEPOIS DAR ERRO NO SEGUNDO PRODUTO. NAO ESTÁ DESFAZENDO A ALTERAÇÃO NO PRIMEIRO PRODUTO
+                    _productRepository.UpdateNoCommit(product);
 
                     orderProduct.Price = product.Price;
                     var totalPriceProduct = orderProduct.Quantity * product.Price;
@@ -200,6 +202,7 @@ public class OrderController : CoreController
             order.TotalValue = productsValues;
 
             await _orderRepository.AddOrderAsync(contextUser, order);
+            await _productRepository.SaveChangesAsync();
 
             return StatusCode(201, order.Id);
         }
@@ -240,9 +243,6 @@ public class OrderController : CoreController
             if (order.Status != OrderStatus.InProgress)
                 return BadRequest(new { errors = "O pedido não está em andamento, não é possível atualizar" });
 
-            //if (order.Status == OrderStatus.Canceled)
-            //    return BadRequest(new { errors = "O pedido está cancelado, não é possível atualizar" });
-
             if (updateModel.CustomerPersonId != null && updateModel.CustomerPersonId > 0)
             {
                 var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, updateModel.CustomerPersonId.Value);
@@ -250,7 +250,6 @@ public class OrderController : CoreController
                     return NotFound(new { errors = "Cliente não encontrado" });
             }
 
-            
             // Atualiza a quantidade de produtos removidos
             foreach (var existingItem in order.Products)
             {
@@ -259,7 +258,7 @@ public class OrderController : CoreController
                 {
                     var product = await _productRepository.GetProductByIdAsync(contextUser, existingItem.ProductId);
                     product.Quantity += existingItem.Quantity;
-                    await _productRepository.UpdateAsync(product);
+                    _productRepository.UpdateNoCommit(product);
                 }
             }
 
@@ -278,7 +277,10 @@ public class OrderController : CoreController
                         if (product.Quantity <= 0)
                         {
                             if (product.Disponibility)
+                            {
                                 product.Disponibility = false;
+                                var responseTesteView = await _productRepository.UpdateAsync(product);
+                            }
 
                             return BadRequest(new { errors = $"Não é possível adicionar o produto: {product.Name}, o mesmo não se encontra disponível" });
                         }
@@ -295,7 +297,7 @@ public class OrderController : CoreController
                     product.Quantity -= newItem.Quantity;
                     KeyValue keyValue = new() { Key = product.Id, Value = product.Price };
                     keyValues.Add(keyValue);
-                    await _productRepository.UpdateAsync(product);
+                    _productRepository.UpdateNoCommit(product);
                 }
                 else
                 {
@@ -311,7 +313,7 @@ public class OrderController : CoreController
                     productsValues += totalPriceProduct;
                     KeyValue keyValue = new() { Key = product.Id, Value = product.Price };
                     keyValues.Add(keyValue);
-                    await _productRepository.UpdateAsync(product);
+                    _productRepository.UpdateNoCommit(product);
                 }
             }
 
@@ -328,7 +330,8 @@ public class OrderController : CoreController
             order.UpdatedAt = DateTime.UtcNow;
             order.UpdatedBy = contextUser.GetCurrentUser();
             await _orderRepository.UpdateAsync(order);
-            
+            await _productRepository.SaveChangesAsync();
+
             var result = _mapper.Map<OrderReadModel>(order);
             return StatusCode(201, result);
         }
@@ -451,7 +454,7 @@ public class OrderController : CoreController
             if (order.Status == OrderStatus.Finished)
                 return BadRequest(new { errors = "Não é possível excluir um pedido finalizado" });
 
-            //No caso de exclusao do pedido, reverter as alterações do produto relacionados a quantidade e disponibilidade
+            //No caso de exclusao do pedido, reverte as alterações do produto relacionados a quantidade e disponibilidade
             if (order.Products != null)
             {
                 foreach ( var orderProduct in order.Products)
@@ -463,7 +466,7 @@ public class OrderController : CoreController
                     product.Quantity += orderProduct.Quantity;
                     if (product.Quantity > 0) 
                     { 
-                        product.Disponibility = true; 
+                        product.Disponibility = true;
                     }
 
                     await _productRepository.UpdateAsync(product);
