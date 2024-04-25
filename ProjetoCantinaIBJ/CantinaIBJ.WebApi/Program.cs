@@ -79,18 +79,20 @@ services.AddAuthentication(options =>
                     var json = new WebClient().DownloadString($"https://cognito-idp.us-east-2.amazonaws.com/us-east-2_CT2bI5jE6/.well-known/jwks.json");
                     var keys = JsonConvert.DeserializeObject<Jwks>(json).Keys;
 
-                    var selectedKey = keys.FirstOrDefault(k => k.KeyId == identifier);
+                    var selectedKey = keys?.FirstOrDefault(k => k.KeyId == identifier);
                     if (selectedKey == null)
                     {
                         throw new SecurityTokenSignatureKeyNotFoundException("Matching key not found.");
                     }
 
+#pragma warning disable CA1416 // Validate platform compatibility
                     var rsa = new RSACng();
                     rsa.ImportParameters(new RSAParameters
                     {
                         Exponent = Base64Url.Decode(selectedKey.Exponent),
                         Modulus = Base64Url.Decode(selectedKey.Modulus)
                     });
+#pragma warning restore CA1416 // Validate platform compatibility
 
                     return new List<SecurityKey> { new RsaSecurityKey(rsa) };
                 }
@@ -99,8 +101,8 @@ services.AddAuthentication(options =>
             {
                 OnTokenValidated = async context =>
                 {
-                    var claimsIdentity = (ClaimsIdentity)context.Principal.Identity;
-                    var username = claimsIdentity.Claims?.FirstOrDefault(x => x.Type.Contains(Cognito.ID))?.Value;
+                    var claimsIdentity = (ClaimsIdentity?)context?.Principal?.Identity;
+                    var username = claimsIdentity?.Claims?.FirstOrDefault(x => x.Type.Contains(Cognito.ID))?.Value;
 
                     var cognitoClient = new AmazonCognitoIdentityProviderClient(builder.Configuration["Cognito:AccessKey"], builder.Configuration["Cognito:SecretKey"], RegionEndpoint.USEast2);
 
@@ -115,13 +117,13 @@ services.AddAuthentication(options =>
                         if (user.UserAttributes != null)
                         {
                             if (user.UserAttributes.Any(a => a.Name == "email"))
-                                claimsIdentity.AddClaim(new Claim("cognito:email", user.UserAttributes.First(a => a.Name == "email").Value));
+                                claimsIdentity?.AddClaim(new Claim("cognito:email", user.UserAttributes.First(a => a.Name == "email").Value));
 
                             if (user.UserAttributes.Any(a => a.Name == "name"))
-                                claimsIdentity.AddClaim(new Claim("cognito:name", user.UserAttributes.First(a => a.Name == "name").Value));
+                                claimsIdentity?.AddClaim(new Claim("cognito:name", user.UserAttributes.First(a => a.Name == "name").Value));
 
                             if (user.UserAttributes.Any(a => a.Name == "phone_number"))
-                                claimsIdentity.AddClaim(new Claim("cognito:phone_number", user.UserAttributes.First(a => a.Name == "phone_number").Value));
+                                claimsIdentity?.AddClaim(new Claim("cognito:phone_number", user.UserAttributes.First(a => a.Name == "phone_number").Value));
                         }
                     }
                 }

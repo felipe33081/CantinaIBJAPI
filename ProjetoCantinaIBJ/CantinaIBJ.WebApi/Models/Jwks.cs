@@ -7,7 +7,7 @@ namespace CantinaIBJ.WebApi.Models;
 public class Jwks
 {
     [JsonProperty("keys")]
-    public List<JwksKey> Keys { get; set; }
+    public List<JwksKey>? Keys { get; set; }
 }
 
 public class JwksKey
