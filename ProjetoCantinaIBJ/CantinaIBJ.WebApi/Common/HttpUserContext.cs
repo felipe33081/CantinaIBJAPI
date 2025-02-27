@@ -39,7 +39,8 @@ public class HttpUserContext
             user.Email = claim?.LastOrDefault(c => c.Type == Cognito.EMAIL)?.Value;
             user.PhoneNumber = claim?.LastOrDefault(c => c.Type == Cognito.PHONE_NUMBER)?.Value;
             user.Tenant = claim?.FirstOrDefault(x => x.Type == Cognito.ISSUER)?.Value?.Split('/').Last();
-            user.Group = claim?.FirstOrDefault(c => c.Type.EndsWith(Cognito.GROUPS) && c.Value == "Admin") != null ? "Admin" :
+            user.Group = claim?.FirstOrDefault(c => c.Type.EndsWith(Cognito.GROUPS) && c.Value == "MasterAdmin") != null ? "MasterAdmin" :
+              claim?.FirstOrDefault(c => c.Type.EndsWith(Cognito.GROUPS) && c.Value == "Admin") != null ? "Admin" :
               claim?.FirstOrDefault(c => c.Type.EndsWith(Cognito.GROUPS) && c.Value == "User") != null ? "User" :
               string.Empty;
 

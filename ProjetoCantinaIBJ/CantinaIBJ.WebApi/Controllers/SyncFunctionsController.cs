@@ -1,15 +1,13 @@
 ﻿using Amazon;
 using Amazon.CognitoIdentityProvider;
 using Amazon.CognitoIdentityProvider.Model;
+using CantinaIBJ.Integration.WhatsGW;
 using CantinaIBJ.Model.AppSettings;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
-using CantinaIBJ.WebApi.Models;
-using CantinaIBJ.WebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System.Security.Claims;
 using static CantinaIBJ.WebApi.Common.Constants;
 
 namespace CantinaIBJ.WebApi.Controllers
@@ -25,15 +23,34 @@ namespace CantinaIBJ.WebApi.Controllers
         private readonly IHttpContextAccessor _httpContextAccessor;
         readonly CognitoSettings _cognitoSettings;
         readonly HttpUserContext _userContext;
+        readonly IWhatsGWService _whatsGWService;
 
         public SyncFunctionsController(
             IOptions<CognitoSettings> cognitoSettings,
             HttpUserContext userContext,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IWhatsGWService whatsGWService)
         {
             _cognitoSettings = cognitoSettings.Value;
             _userContext = userContext;
             _httpContextAccessor = httpContextAccessor;
+            _whatsGWService = whatsGWService;
+        }
+
+        [HttpPost("TesteWhatsMessage")]
+        public async Task<IActionResult> TesteWhatsMessage([FromQuery] string toNumber, string message)
+        {
+            try
+            {
+                var result = await _whatsGWService.WhatsSendMessage(toNumber, message);
+
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("CreateGroupsForUsers")]
@@ -99,6 +116,7 @@ namespace CantinaIBJ.WebApi.Controllers
         [Authorize(Policy.USER)]
         public async Task<IActionResult> GetTestUserAdmin([FromQuery] string username, string userPoolId)
         {
+            var test = _cognitoSettings.SecretKey;
             var contextUser = _userContext.GetContextUser();
 
             //var cognitoClient = new AmazonCognitoIdentityProviderClient(_cognitoSettings.AccessKey, _cognitoSettings.SecretKey, RegionEndpoint.USEast2);

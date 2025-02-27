@@ -22,7 +22,7 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
             .Count();
     }
 
-    public async Task<ListDataPagination<CustomerPerson>> GetListCustomerPersons(UserContext contextUser, int page, int size, string? name, string? email, string? searchString, bool isDeleted, string? orderBy)
+    public async Task<ListDataPagination<CustomerPerson>> GetListCustomerPersons(UserContext contextUser, int page, int size, string? name, string? phone, string? searchString, bool isDeleted, string? orderBy)
     {
         var query = Context.CustomerPerson
             .Where(x => x.IsDeleted == false);
@@ -31,7 +31,6 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
         {
             searchString = searchString.ToLower().Trim();
             query = query.Where(q => q.Name.ToLower().Contains(searchString) ||
-            q.Email.ToLower().Contains(searchString) ||
             q.Phone.ToLower().Contains(searchString));
         }
 
@@ -40,13 +39,15 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
             query = query.Where(q => q.Name.ToLower().Contains(name));
         }
 
-        if (!string.IsNullOrEmpty(email))
+        if (!string.IsNullOrEmpty(phone))
         {
-            query = query.Where(q => q.Email.ToLower().Contains(email));
+            query = query.Where(q => q.Phone.ToLower().Contains(phone));
         }
 
         if (isDeleted)
             query = query.Where(q => q.IsDeleted == true);
+
+        query = query.OrderByDescending(t => t.CreatedAt);
 
         if (!string.IsNullOrEmpty(orderBy))
         {
@@ -93,6 +94,18 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
                     break;
                 case "createdBy_ASC":
                     query = query.OrderBy(t => t.CreatedBy);
+                    break;
+                case "updatedAt_DESC":
+                    query = query.OrderByDescending(t => t.UpdatedAt);
+                    break;
+                case "updatedAt_ASC":
+                    query = query.OrderBy(t => t.UpdatedAt);
+                    break;
+                case "updatedBy_DESC":
+                    query = query.OrderByDescending(t => t.UpdatedBy);
+                    break;
+                case "updatedBy_ASC":
+                    query = query.OrderBy(t => t.UpdatedBy);
                     break;
             }
         }

@@ -5,7 +5,6 @@ using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Models.Create.Product;
-using CantinaIBJ.WebApi.Models.Read.Customer;
 using CantinaIBJ.WebApi.Models.Read.Product;
 using CantinaIBJ.WebApi.Models.Update.Product;
 using Microsoft.AspNetCore.Authorization;
@@ -14,13 +13,9 @@ using static CantinaIBJ.WebApi.Common.Constants;
 
 namespace CantinaIBJ.WebApi.Controllers;
 
-[ApiController]
-[Route("v1/[controller]")]
-[Produces("application/json")]
 public class ProductController : CoreController
 {
     readonly IProductRepository _productRepository;
-    readonly IProductHistoricRepository _productHistoricRepository;
     readonly Mappers _mappers;
     readonly IMapper _mapper;
     readonly HttpUserContext _userContext;
@@ -30,14 +25,12 @@ public class ProductController : CoreController
         IMapper mapper,
         ILogger<ProductController> logger,
         IProductRepository productRepository,
-        IProductHistoricRepository productHistoricRepository,
         Mappers mappers,
         HttpUserContext userContext)
     {
         _mapper = mapper;
         _logger = logger;
         _productRepository = productRepository;
-        _productHistoricRepository = productHistoricRepository;
         _mappers = mappers;
         _userContext = userContext;
     }
@@ -145,6 +138,9 @@ public class ProductController : CoreController
             if (product.Quantity > 0)
                 product.Disponibility = true;
 
+            if (product.Quantity < 0)
+                return BadRequest(new { errors = $"Não é possível adicionar um produto com quantidade menor que zero" });
+
             await _productRepository.AddProductAsync(contextUser, product);
 
             return Ok(product.Id);
@@ -166,7 +162,7 @@ public class ProductController : CoreController
     /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}")]
     [Authorize(Policy.ADMIN)]
-    [ProducesResponseType(200)]
+    [ProducesResponseType(204)]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProductUpdateModel updateModel)
     {
         if (!ModelState.IsValid)
@@ -179,17 +175,28 @@ public class ProductController : CoreController
             var product = await _productRepository.GetProductByIdAsync(contextUser, id);
             if (product is null)
                 return NotFound(new { errors = "Produto não encontrado" });
-
+            
             _mapper.Map(updateModel, product);
 
             product.UpdatedAt = DateTimeOffset.UtcNow;
             product.UpdatedBy = contextUser.GetCurrentUser();
 
-            await _productRepository.UpdateAsync(product);
+            if (product.Quantity <= 0)
+            {
+                if (product.Disponibility)
+                {
+                    product.Disponibility = false;
+                }
+            }
+            else
+            {
+                product.Disponibility = true;
+            }
 
+            await _productRepository.UpdateAsync(product);
             await _mappers.ProductToProductHistoric(contextUser, product);
 
-            return Ok(product);
+            return NoContent();
         }
         catch (Exception e)
         {
@@ -224,7 +231,7 @@ public class ProductController : CoreController
 
             await _productRepository.UpdateAsync(product);
 
-            return Ok(product);
+            return NoContent();
         }
         catch (Exception e)
         {

@@ -5,6 +5,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CantinaIBJ.WebApi.Controllers.Core;
 
+[ApiController]
+[Route("v1/[controller]")]
+[Produces("application/json")]
 public class CoreController : Controller
 {
     protected BadRequestObjectResult LoggerBadRequest(Exception e, ILogger logger)

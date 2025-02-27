@@ -7,10 +7,6 @@ using static CantinaIBJ.WebApi.Common.Constants;
 
 namespace CantinaIBJ.WebApi.Controllers.Dashboard
 {
-    [ApiController]
-    [Authorize(Policy.USER)]
-    [Route("v1/[controller]")]
-    [Produces("application/json")]
     public class DashboardController : CoreController
     {
         readonly IDashboardRepository _repository;
@@ -21,6 +17,7 @@ namespace CantinaIBJ.WebApi.Controllers.Dashboard
         }
 
         [HttpGet("Metrics")]
+        [Authorize(Policy.USER)]
         public IActionResult GetDashboardData([FromQuery] DateTime? initialDate = null, [FromQuery] DateTime? finalDate = null)
         {
             DateTime from = DateTime.Today;

@@ -9,8 +9,6 @@ namespace CantinaIBJ.WebApi.Helpers;
 
 public static class RandomHelpers
 {
-    static readonly HttpClient client = new HttpClient();
-
     public class Location
     {
         public double Latitude { get; set; }
@@ -174,36 +172,6 @@ public static class RandomHelpers
         return null;
     }
 
-    public static Location GetLatLng(string street, string number, string cityName, string stateAbrev, string key)
-    {
-
-        try
-        {
-            var url =
-                $"https://maps.googleapis.com/maps/api/geocode/json?address={street}, {number}, {cityName} - {stateAbrev}&key={key}";
-            var response = client.GetAsync(url).Result;
-            var content = response.Content.ReadAsStringAsync();
-            dynamic obj = JsonConvert.DeserializeObject(content.Result);
-            string test = obj.ToString();
-            if (!test.Contains("UNKNOWN") && !test.Contains("ZERO_RESULTS"))
-            {
-                dynamic location = obj.results[0].geometry.location;
-
-                return new Location
-                {
-                    Latitude = location.lat,
-                    Longitude = location.lng
-                };
-            }
-            return null;
-        }
-        catch
-        {
-            return null;
-        }
-
-    }
-
     public static void WriteCSVLocal<T>(IEnumerable<T> items, string path)
     {
         Type itemType = typeof(T);
@@ -253,14 +221,14 @@ public static class RandomHelpers
         List<EnumValue> values = new List<EnumValue>();
         foreach (var itemType in Enum.GetValues(enumType))
         {
-            string description = null;
+            string? description = null;
 
             try
             {
-                var attributes = (enumType.GetField(itemType.ToString()).GetCustomAttributes(
+                var attributes = (enumType.GetField(itemType.ToString()!)?.GetCustomAttributes(
                 typeof(DescriptionAttribute),
                 false));
-                description = ((DescriptionAttribute)attributes[0]).Description;
+                description = ((DescriptionAttribute)attributes![0]).Description;
             }
             catch
             {
@@ -281,7 +249,7 @@ public static class RandomHelpers
         return GetEnumDescription(value, "");
     }
 
-    public static string GetEnumDescription(Enum value, string enumPrefix)
+    public static string GetEnumDescription(Enum? value, string enumPrefix)
     {
         if (value == null)
         {
@@ -289,10 +257,10 @@ public static class RandomHelpers
         }
         try
         {
-            FieldInfo fi = value.GetType().GetField(String.Format("{1}{0}", value.ToString(), enumPrefix));
+            FieldInfo? fi = value.GetType().GetField(string.Format("{1}{0}", value.ToString(), enumPrefix));
 
-            DescriptionAttribute[] attributes =
-                (DescriptionAttribute[])fi.GetCustomAttributes(
+            DescriptionAttribute[]? attributes =
+                (DescriptionAttribute[]?)fi?.GetCustomAttributes(
                 typeof(DescriptionAttribute),
                 false);
 
@@ -303,21 +271,20 @@ public static class RandomHelpers
         }
         catch
         {
-            return default(string);
+            return default!;
         }
     }
 
-    public static int GetEnumFromDescription(string description, Type enumType)
+    public static int? GetEnumFromDescription(string description, Type enumType)
     {
         foreach (var field in enumType.GetFields())
         {
-            DescriptionAttribute attribute
-                = Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) as DescriptionAttribute;
+            DescriptionAttribute? attribute = Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) as DescriptionAttribute;
             if (attribute == null)
                 continue;
-            if ((attribute.Description?.ToLower()?.Contains(description?.ToLower())) == true)
+            if ((attribute.Description?.ToLower()?.Contains(description.ToLower())) == true)
             {
-                return (int)field.GetValue(null);
+                return (int?)field.GetValue(null);
             }
         }
         return 0;
@@ -413,7 +380,7 @@ public static class RandomHelpers
 
 public class EnumValue
 {
-    public string Name { get; set; }
-    public string Value { get; set; }
+    public string? Name { get; set; }
+    public string? Value { get; set; }
     public int ValueAsInt { get; set; }
 }

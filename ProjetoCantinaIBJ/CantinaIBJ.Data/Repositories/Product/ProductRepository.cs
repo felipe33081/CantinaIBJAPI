@@ -48,6 +48,8 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
         if (isDeleted)
             query = query.Where(q => q.IsDeleted == true);
 
+        query = query.OrderByDescending(t => t.CreatedAt);
+
         if (!string.IsNullOrEmpty(orderBy))
         {
             switch (orderBy)
@@ -82,10 +84,10 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
                 case "quantity_ASC":
                     query = query.OrderBy(t => t.Quantity);
                     break;
-                case "diponibility_DESC":
+                case "disponibility_DESC":
                     query = query.OrderByDescending(t => t.Disponibility);
                     break;
-                case "diponibility_ASC":
+                case "disponibility_ASC":
                     query = query.OrderBy(t => t.Disponibility);
                     break;
                 case "createdAt_DESC":
@@ -93,6 +95,18 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
                     break;
                 case "createdAt_ASC":
                     query = query.OrderBy(t => t.CreatedAt);
+                    break;
+                case "updatedAt_DESC":
+                    query = query.OrderByDescending(t => t.UpdatedAt);
+                    break;
+                case "updatedAt_ASC":
+                    query = query.OrderBy(t => t.UpdatedAt);
+                    break;
+                case "updatedBy_DESC":
+                    query = query.OrderByDescending(t => t.UpdatedBy);
+                    break;
+                case "updatedBy_ASC":
+                    query = query.OrderBy(t => t.UpdatedBy);
                     break;
             }
         }

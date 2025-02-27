@@ -29,12 +29,13 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         return Context.Order.ToList();
     }
 
-    public List<Order> GetAllByCustomerId(int id)
+    public async Task<List<Order>> GetAllByCustomerId(int id)
     {
-        return Context.Order
+        return await Context.Order
             .Include(x => x.CustomerPerson)
-            .Where(x => x.CustomerPerson.Id == id)
-            .ToList();
+            .Include(x => x.Products).ThenInclude(o => o.Product)
+            .Where(x => x.CustomerPerson!.Id == id)
+            .ToListAsync();
     }
 
     public async Task<ListDataPagination<Order>> GetListOrders(UserContext contextUser, int page, int size, string? searchString, int? id, bool isDeleted, string? orderBy, OrderStatus? status)
@@ -42,7 +43,7 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         var query = Context.Order
             .Include(x => x.CustomerPerson)
             .Include(x => x.Products).ThenInclude(o => o.Product)
-            .Where(c => c.IsDeleted == false);
+            .Where(c => c.Status != OrderStatus.Created);
 
         if (!string.IsNullOrEmpty(searchString))
         {
@@ -60,6 +61,8 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         {
             query = query.Where(x => x.Status == status);
         }
+
+        query = query.OrderByDescending(t => t.CreatedAt);
 
         if (!string.IsNullOrEmpty(orderBy))
         {
@@ -96,7 +99,17 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         return data;
     }
 
-    public async Task<Order> GetOrderByIdAsync(UserContext contextUser, int id)
+    public async Task<Order?> GetOrderByIdEndpointAsync(int id)
+    {
+        var query = await Context.Order
+            .Include(x => x.CustomerPerson)
+            .Include(x => x.Products).ThenInclude(c => c.Product)
+            .SingleOrDefaultAsync(x => x.Id == id);
+
+        return query;
+    }
+
+    public async Task<Order?> GetOrderByIdAsync(UserContext contextUser, int id)
     {
         var query = await Context.Order
             .Include(x => x.CustomerPerson)

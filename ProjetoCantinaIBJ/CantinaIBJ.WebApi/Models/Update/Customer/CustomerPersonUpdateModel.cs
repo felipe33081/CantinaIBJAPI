@@ -21,4 +21,9 @@ public class CustomerPersonUpdateModel : BaseUpdateModel
     /// </summary>
     [Required(ErrorMessage = "Obrigatório informar o Celular")]
     public string Phone { get; set; }
+
+    /// <summary>
+    /// Saldo do Cliente
+    /// </summary>
+    public decimal Balance { get; set; }
 }
