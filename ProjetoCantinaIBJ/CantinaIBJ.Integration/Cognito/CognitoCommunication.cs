@@ -6,7 +6,6 @@ using CantinaIBJ.Integration.Cognito.Model.User;
 using CantinaIBJ.Model;
 using CantinaIBJ.Model.AppSettings;
 using Microsoft.Extensions.Options;
-using System.Drawing;
 
 namespace CantinaIBJ.Integration.Cognito;
 
@@ -144,7 +143,7 @@ public class CognitoCommunication : ICognitoCommunication
             {
                 UserPoolId = userPoolId
             });
-        
+
         resp.Groups = resp.Groups.Where(x => x.GroupName.ToLower().Contains((searchString ?? "").ToLower())).ToList();
         resp.NextToken = null;
         return resp;
@@ -260,11 +259,12 @@ public class CognitoCommunication : ICognitoCommunication
             MessageAction = messageActionType.Value,
             DesiredDeliveryMediums = new List<string>() { "EMAIL" },
             UserAttributes = new List<AttributeType> {
-                    new AttributeType { Name = "email_verified", Value = model.EmailVerified.ToString() },
-                    new AttributeType { Name = "email", Value = model.Email.ToLower().Trim() },
-                    new AttributeType { Name = "name", Value = model.Name },
-                    new AttributeType { Name = "phone_number", Value = model.PhoneNumber }
-                }
+                new AttributeType { Name = "email_verified", Value = model.EmailVerified.ToString() },
+                new AttributeType { Name = "email", Value = model.Email.ToLower().Trim() },
+                new AttributeType { Name = "name", Value = model.Name },
+                new AttributeType { Name = "phone_number", Value = model.PhoneNumber },
+                new AttributeType { Name = "phone_number_verified", Value = "true" }
+            }
         });
 
         if (cognitoResponse is not null)
@@ -280,9 +280,9 @@ public class CognitoCommunication : ICognitoCommunication
     public async Task SetEmailVerified(string userId, string userPoolId)
     {
         var attrs = new List<AttributeType>
-                {
-                    new AttributeType { Name = "email_verified", Value = "true" }
-                };
+        {
+            new AttributeType { Name = "email_verified", Value = "true" }
+        };
         await _cognitoProviderClient.AdminUpdateUserAttributesAsync(new()
         {
             Username = userId,
@@ -294,12 +294,13 @@ public class CognitoCommunication : ICognitoCommunication
     public async Task UpdateUserAsync(string userId, UserPutRequestModel model, string userPoolId)
     {
         var attrs = new List<AttributeType>
-            {
-                new AttributeType { Name = "email", Value = model.Email.ToLower().Trim() },
-                new AttributeType { Name = "name", Value = model.Name },
-                new AttributeType { Name = "phone_number", Value = model.PhoneNumber },
-                new AttributeType { Name = "email_verified", Value = model.EmailVerified == true ? "true" : "false" }
-            };
+        {
+            new AttributeType { Name = "email", Value = model.Email.ToLower().Trim() },
+            new AttributeType { Name = "name", Value = model.Name },
+            new AttributeType { Name = "phone_number", Value = model.PhoneNumber },
+            new AttributeType { Name = "email_verified", Value = model.EmailVerified == true ? "true" : "false" },
+            new AttributeType { Name = "phone_number_verified", Value = "true" }
+        };
         await _cognitoProviderClient.AdminUpdateUserAttributesAsync(new()
         {
             Username = userId,
@@ -321,7 +322,7 @@ public class CognitoCommunication : ICognitoCommunication
             Username = id,
             UserPoolId = userPoolId
         });
-        
+
 
     public async Task AdminSetUserPasswordAsync(string id, string userPoolId, string newPassword, bool permanent)
     {

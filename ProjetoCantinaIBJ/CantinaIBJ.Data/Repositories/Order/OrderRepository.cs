@@ -68,6 +68,18 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         {
             switch (orderBy)
             {
+                //case "customerPersonDisplay_ASC":
+                //    query = query.OrderByDescending(t => t.CustomerName);
+                //    break;
+                //case "customerPersonDisplay_DESC":
+                //    query = query.OrderByDescending(t => t.Id);
+                //    break;
+                case "statusDisplay_ASC":
+                    query = query.OrderBy(t => t.Status);
+                    break;
+                case "statusDisplay_DESC":
+                    query = query.OrderByDescending(t => t.Status);
+                    break;
                 case "id_DESC":
                     query = query.OrderByDescending(t => t.Id);
                     break;

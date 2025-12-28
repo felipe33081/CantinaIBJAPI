@@ -9,15 +9,14 @@ using CantinaIBJ.Model.Orders;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
 using CantinaIBJ.WebApi.Helpers;
-using CantinaIBJ.WebApi.Mapper;
 using CantinaIBJ.WebApi.Models;
 using CantinaIBJ.WebApi.Models.Create.Order;
 using CantinaIBJ.WebApi.Models.Read.Order;
 using CantinaIBJ.WebApi.Models.Update.Order;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static CantinaIBJ.WebApi.Common.Constants;
 using System.Globalization;
+using static CantinaIBJ.WebApi.Common.Constants;
 
 namespace CantinaIBJ.WebApi.Controllers;
 
@@ -439,7 +438,7 @@ public class OrderController : CoreController
 
                         message += $"- _{nomeProduto}_ - {quantidade} _Unid_ x R$ {precoUnitario:F2} = R$ {precoTotalProduto:F2}\n";
                     }
-
+    
                     message += $"\n*Valor total do pedido:* R$ {order.TotalValue:F2}";
 
                     // Envia a mensagem usando o serviço WhatsApp

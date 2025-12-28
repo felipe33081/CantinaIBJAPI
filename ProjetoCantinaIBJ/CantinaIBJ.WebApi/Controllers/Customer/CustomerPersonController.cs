@@ -162,17 +162,16 @@ public class CustomerPersonController : CoreController
 
             CustomerPerson customer;
 
-            string phoneNumber = model.Phone.ToString();
+            string cleanedPhone = System.Text.RegularExpressions.Regex.Replace(model.Phone.ToString(), @"[()\s-]", "");
 
-            // Defina sua expressão regular para validar números de telefone
-            string pattern = @"^(\([1-9]{2}\)\s?9[0-9]{4}-?[0-9]{4})$";
+            string pattern = @"^[1-9]{2}9[0-9]{8}$";
 
-            if (!System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, pattern))
+            if (!System.Text.RegularExpressions.Regex.IsMatch(cleanedPhone, pattern))
             {
-                throw new Exception("Por favor, insira um número de telefone válido.");
+                throw new Exception("Por favor, insira um número de telefone válido com 11 dígitos (DDD + número).");
             }
 
-            model.Phone = System.Text.RegularExpressions.Regex.Replace(model.Phone, @"[()\s-]", "");
+            model.Phone = cleanedPhone;
 
             var nameLowed = model.Name.ToLower();
             customer = await _customerPersonRepository.GetCustomerPersonByNameAsync(contextUser, nameLowed);
@@ -202,7 +201,8 @@ public class CustomerPersonController : CoreController
 
             try
             {
-                await _whatsGWService.WhatsSendMessage("55" + customer.Phone, $"*Cantina IBJ*\n\nOlá, *{customer.Name}*.\nSua conta foi aberta no retiro de jovens IBJ 2024!");
+                string message = $"*Cantina IBJ*\n\nOlá, *{customer.Name}*.\nSua conta foi aberta no retiro IBJ 2026!";
+                await _whatsGWService.WhatsSendMessage("55" + customer.Phone, message);
             }
             catch { }
 
@@ -234,6 +234,17 @@ public class CustomerPersonController : CoreController
         try
         {
             var contextUser = _userContext.GetContextUser();
+
+            string cleanedPhone = System.Text.RegularExpressions.Regex.Replace(updateModel.Phone.ToString(), @"[()\s-]", "");
+
+            string pattern = @"^[1-9]{2}9[0-9]{8}$";
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(cleanedPhone, pattern))
+            {
+                throw new Exception("Por favor, insira um número de telefone válido com 11 dígitos (DDD + número).");
+            }
+
+            updateModel.Phone = cleanedPhone;
 
             var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
             if (customerPerson is null)
@@ -287,7 +298,8 @@ public class CustomerPersonController : CoreController
 
             try
             {
-                await _whatsGWService.WhatsSendMessage("55" + customerPerson.Phone, $"*Cantina IBJ*\n\nOlá, *{customerPerson.Name}*.\nSua conta no retiro de jovens IBJ 2024 foi paga.\nConta fechada.");
+                string message = $"*Cantina IBJ*\n\nOlá, *{customerPerson.Name}*.\nSua conta no retiro IBJ 2026 foi paga.\nConta encerrada.";
+                await _whatsGWService.WhatsSendMessage("55" + customerPerson.Phone, message);
             }
             catch { }
             
