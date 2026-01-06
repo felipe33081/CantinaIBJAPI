@@ -1,0 +1,8 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "./CantinaIBJ.WebApi/Dockerfile"
+
+[deploy]
+startCommand = "./CantinaIBJ.WebApi"
+restartPolicyType = "always"
+healthcheckPath = "/health"
