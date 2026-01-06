@@ -32,6 +32,8 @@ var host = Host
         b.AddConsole();
     });
 
+services.AddHealthChecks();
+
 services.AddMvcCore()
    .AddAuthorization()
    .AddDataAnnotations();
@@ -65,6 +67,8 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+app.UseHealthChecks("/health");
 
 app.UseSwagger(x =>
 {
