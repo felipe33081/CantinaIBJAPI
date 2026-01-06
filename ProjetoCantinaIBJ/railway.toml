@@ -1,6 +1,6 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "./CantinaIBJ.WebApiTeste/Dockerfile"
+dockerfilePath = "./CantinaIBJ.WebApi/Dockerfile"
 
 [deploy]
 startCommand = "./CantinaIBJ.WebApi"
