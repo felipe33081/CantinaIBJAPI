@@ -1,6 +1,7 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "CantinaIBJ.WebApi/Dockerfile"
+# Ajustado: Adicionei a pasta pai e corrigi "CantinaIBJ" para "CantinalBJ"
+dockerfilePath = "ProjetoCantinalBJ/CantinalBJ.WebApi/Dockerfile"
 
 [deploy]
 restartPolicyType = "always"
