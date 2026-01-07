@@ -129,7 +129,7 @@ public static class ServicesConfiguration
             c.SchemaFilter<IgnoreEnumSchemaFilter>(XDocument.Load(xmlPath));
         });
     }
-    
+
     public static void AddAuthenticationCIBJ(this IServiceCollection services, WebApplicationBuilder builder)
     {
         services.AddAuthentication(options =>
@@ -139,66 +139,82 @@ public static class ServicesConfiguration
         })
         .AddJwtBearer(options =>
         {
-            // configuração do JWT bearer
+            // 1. A MÁGICA: O Authority baixa as chaves (jwks) sozinho e valida a assinatura
+            // Garanta que a variável Jwt:Issuer no Railway NÃO tenha barra no final
+            options.Authority = builder.Configuration["Jwt:Issuer"];
+
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidateAudience = false,
-                ValidateIssuerSigningKey = true,
                 ValidIssuer = builder.Configuration["Jwt:Issuer"],
+
+                ValidateAudience = false, // Mantive desligado como no seu, mas ideal é ligar no futuro
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero,
-                IssuerSigningKeyResolver = (s, securityToken, identifier, parameters) =>
-                {
-                    var json = new WebClient().DownloadString($"https://cognito-idp.us-east-2.amazonaws.com/us-east-2_CT2bI5jE6/.well-known/jwks.json");
-                    var keys = JsonConvert.DeserializeObject<Jwks>(json)?.Keys;
 
-                    var selectedKey = keys?.FirstOrDefault(k => k.KeyId == identifier);
-                    if (selectedKey == null)
-                    {
-                        throw new SecurityTokenSignatureKeyNotFoundException("Matching key not found.");
-                    }
-
-#pragma warning disable CA1416 // Validate platform compatibility
-                    var rsa = new RSACng();
-                    rsa.ImportParameters(new RSAParameters
-                    {
-                        Exponent = Base64Url.Decode(selectedKey.Exponent),
-                        Modulus = Base64Url.Decode(selectedKey.Modulus)
-                    });
-#pragma warning restore CA1416 // Validate platform compatibility
-
-                    return new List<SecurityKey> { new RsaSecurityKey(rsa) };
-                }
+                // Removemos aquele bloco gigante do IssuerSigningKeyResolver
+                // O options.Authority já faz aquilo automaticamente
             };
+
             options.Events = new JwtBearerEvents
             {
+                // DICA DE DEBUG: Se der erro, esse evento mostra o porquê no log
+                OnAuthenticationFailed = context =>
+                {
+                    Console.WriteLine($"Token Falhou: {context.Exception.Message}");
+                    return Task.CompletedTask;
+                },
+
                 OnTokenValidated = async context =>
                 {
-                    var claimsIdentity = (ClaimsIdentity?)context?.Principal?.Identity;
-                    var username = claimsIdentity?.Claims?.FirstOrDefault(x => x.Type.Contains(Cognito.ID))?.Value;
-
-                    var cognitoClient = new AmazonCognitoIdentityProviderClient(builder.Configuration["Cognito:AccessKey"], builder.Configuration["Cognito:SecretKey"], RegionEndpoint.USEast2);
-
-                    var user = await cognitoClient.AdminGetUserAsync(new AdminGetUserRequest
+                    // ATENÇÃO: Se as variáveis Cognito__AccessKey ou Cognito__SecretKey
+                    // estiverem erradas no Railway, ESTE BLOCO VAI QUEBRAR O LOGIN.
+                    try
                     {
-                        UserPoolId = builder.Configuration["Cognito:UserPoolId"],
-                        Username = username
-                    });
+                        var claimsIdentity = (ClaimsIdentity?)context?.Principal?.Identity;
+                        var username = claimsIdentity?.Claims?.FirstOrDefault(x => x.Type == "username" || x.Type == "cognito:username")?.Value;
 
-                    if (user != null)
-                    {
-                        if (user.UserAttributes != null)
+                        // Ajuste para pegar o username correto do token se vier nulo acima
+                        if (string.IsNullOrEmpty(username))
                         {
-                            if (user.UserAttributes.Any(a => a.Name == "email"))
-                                claimsIdentity?.AddClaim(new Claim("cognito:email", user.UserAttributes.First(a => a.Name == "email").Value));
-
-                            if (user.UserAttributes.Any(a => a.Name == "name"))
-                                claimsIdentity?.AddClaim(new Claim("cognito:name", user.UserAttributes.First(a => a.Name == "name").Value));
-
-                            if (user.UserAttributes.Any(a => a.Name == "phone_number"))
-                                claimsIdentity?.AddClaim(new Claim("cognito:phone_number", user.UserAttributes.First(a => a.Name == "phone_number").Value));
+                            username = claimsIdentity?.Claims?.FirstOrDefault(x => x.Type.EndsWith("username"))?.Value;
                         }
+
+                        if (!string.IsNullOrEmpty(username))
+                        {
+                            var cognitoClient = new AmazonCognitoIdentityProviderClient(
+                                builder.Configuration["Cognito:AccessKey"],
+                                builder.Configuration["Cognito:SecretKey"],
+                                RegionEndpoint.USEast2);
+
+                            var user = await cognitoClient.AdminGetUserAsync(new AdminGetUserRequest
+                            {
+                                UserPoolId = builder.Configuration["Cognito:UserPoolId"],
+                                Username = username
+                            });
+
+                            if (user != null && user.UserAttributes != null)
+                            {
+                                // Adicionando claims extras
+                                var email = user.UserAttributes.FirstOrDefault(a => a.Name == "email")?.Value;
+                                if (!string.IsNullOrEmpty(email))
+                                    claimsIdentity?.AddClaim(new Claim("cognito:email", email));
+
+                                var name = user.UserAttributes.FirstOrDefault(a => a.Name == "name")?.Value;
+                                if (!string.IsNullOrEmpty(name))
+                                    claimsIdentity?.AddClaim(new Claim("cognito:name", name));
+
+                                var phone_number = user.UserAttributes.FirstOrDefault(a => a.Name == "phone_number")?.Value;
+                                if (!string.IsNullOrEmpty(phone_number))
+                                    claimsIdentity?.AddClaim(new Claim("cognito:phone_number", phone_number));
+
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Se der erro na AWS, logamos mas NÃO derrubamos o token. 
+                        // Assim o usuário loga, mesmo sem os dados extras.
+                        Console.WriteLine($"Erro ao buscar dados no Cognito: {ex.Message}");
                     }
                 }
             };
