@@ -15,14 +15,15 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 COPY . .
-RUN dotnet restore "./CantinaIBJ.WebApi.csproj"
+RUN ls -R
+RUN dotnet restore "CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
 
-RUN dotnet build "./CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
