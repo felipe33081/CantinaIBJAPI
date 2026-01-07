@@ -11,16 +11,11 @@ EXPOSE 8081
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-# Copia TUDO o que encontrar pela frente
+
+COPY . /src/ProjetoCantinaIBJ/CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj
+RUN dotnet restore "./CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
 COPY . .
-RUN mv CantinalBJ.WebApi CantinaIBJ.WebApi || true
-RUN mv CantinalBJ.Data CantinaIBJ.Data || true
-RUN mv CantinalBJ.Model CantinaIBJ.Model || true
-RUN mv CantinalBJ.Framework CantinaIBJ.Framework || true
-RUN mv CantinalBJ.Integration CantinaIBJ.Integration || true
-RUN dotnet restore "CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
-COPY . .
+WORKDIR "/src/CantinaIBJ.WebApi"
 RUN dotnet build "./CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
