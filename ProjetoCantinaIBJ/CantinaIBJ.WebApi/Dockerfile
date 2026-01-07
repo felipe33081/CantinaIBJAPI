@@ -13,7 +13,11 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 
 COPY . /src/ProjetoCantinaIBJ/CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj
-RUN dotnet restore "./CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
+COPY . /src/ProjetoCantinaIBJ/CantinaIBJ.Data/CantinaIBJ.Data.csproj
+COPY . /src/ProjetoCantinaIBJ/CantinaIBJ.Model/CantinaIBJ.Model.csproj
+COPY . /src/ProjetoCantinaIBJ/CantinaIBJ.Framework/CantinaIBJ.Framework.csproj
+COPY . /src/ProjetoCantinaIBJ/CantinaIBJ.Integration/CantinaIBJ.Integration.csproj
+RUN dotnet restore "./src/ProjetoCantinaIBJ/CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
 COPY . .
 WORKDIR "/src/CantinaIBJ.WebApi"
 RUN dotnet build "./CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
