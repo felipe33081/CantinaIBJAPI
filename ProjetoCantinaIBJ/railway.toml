@@ -1,6 +1,6 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "./CantinaIBJ.WebApi/Dockerfile"
+dockerfilePath = "./Dockerfile"
 
 [deploy]
 restartPolicyType = "always"
