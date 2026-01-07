@@ -15,7 +15,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 COPY . .
-RUN ls -R
+
 RUN dotnet restore "CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
 
 RUN dotnet build "CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
