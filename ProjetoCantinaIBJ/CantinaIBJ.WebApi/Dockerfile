@@ -1,38 +1,33 @@
-# 1. Adicionando o bloco "base" que estava faltando (Runtime)
+# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+
+# This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER app
+USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# 2. Build (SDK)
+
+# This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-
-# CORREÇÃO: Ajustei de "CantinaIBJ" (I) para "CantinaIBJ" (L) para bater com o GitHub
 COPY ["CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj", "CantinaIBJ.WebApi/"]
 COPY ["CantinaIBJ.Data/CantinaIBJ.Data.csproj", "CantinaIBJ.Data/"]
 COPY ["CantinaIBJ.Model/CantinaIBJ.Model.csproj", "CantinaIBJ.Model/"]
 COPY ["CantinaIBJ.Framework/CantinaIBJ.Framework.csproj", "CantinaIBJ.Framework/"]
 COPY ["CantinaIBJ.Integration/CantinaIBJ.Integration.csproj", "CantinaIBJ.Integration/"]
-
-# Restaura dependências
 RUN dotnet restore "./CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
-
-# Copia todo o resto
 COPY . .
 WORKDIR "/src/CantinaIBJ.WebApi"
-
-# Build
 RUN dotnet build "./CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# 3. Publish
+# This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# 4. Final (Agora funciona porque o "base" foi definido lá em cima)
+# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
