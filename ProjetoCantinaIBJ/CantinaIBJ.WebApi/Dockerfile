@@ -12,11 +12,7 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj", "CantinaIBJ.WebApi/"]
-COPY ["CantinaIBJ.Data/CantinaIBJ.Data.csproj", "CantinaIBJ.Data/"]
-COPY ["CantinaIBJ.Model/CantinaIBJ.Model.csproj", "CantinaIBJ.Model/"]
-COPY ["CantinaIBJ.Framework/CantinaIBJ.Framework.csproj", "CantinaIBJ.Framework/"]
-COPY ["CantinaIBJ.Integration/CantinaIBJ.Integration.csproj", "CantinaIBJ.Integration/"]
+COPY . .
 RUN dotnet restore "./CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
 COPY . .
 WORKDIR "/src/CantinaIBJ.WebApi"
