@@ -387,7 +387,8 @@ public class UserController : CoreController
     {
         try
         {
-            return Ok();
+            var contextUser = _userContext.GetContextUser();
+            return Ok(contextUser);
         }
         catch (Exception ex)
         {
