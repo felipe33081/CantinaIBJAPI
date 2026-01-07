@@ -15,9 +15,9 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 COPY . .
-RUN dotnet restore "./CantinaIBJ.WebApi.csproj"
+RUN dotnet restore "CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
 
-RUN dotnet build "./CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj" -c Release -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
