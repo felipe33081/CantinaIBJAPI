@@ -139,8 +139,6 @@ public static class ServicesConfiguration
         })
         .AddJwtBearer(options =>
         {
-            // 1. A MÁGICA: O Authority baixa as chaves (jwks) sozinho e valida a assinatura
-            // Garanta que a variável Jwt:Issuer no Railway NÃO tenha barra no final
             options.Authority = builder.Configuration["Jwt:Issuer"];
 
             options.TokenValidationParameters = new TokenValidationParameters
@@ -148,16 +146,13 @@ public static class ServicesConfiguration
                 ValidateIssuer = true,
                 ValidIssuer = builder.Configuration["Jwt:Issuer"],
 
-                ValidateAudience = false, // Mantive desligado como no seu, mas ideal é ligar no futuro
+                ValidateAudience = false,
                 ValidateLifetime = true,
 
-                // Removemos aquele bloco gigante do IssuerSigningKeyResolver
-                // O options.Authority já faz aquilo automaticamente
             };
 
             options.Events = new JwtBearerEvents
             {
-                // DICA DE DEBUG: Se der erro, esse evento mostra o porquê no log
                 OnAuthenticationFailed = context =>
                 {
                     Console.WriteLine($"Token Falhou: {context.Exception.Message}");
@@ -166,14 +161,11 @@ public static class ServicesConfiguration
 
                 OnTokenValidated = async context =>
                 {
-                    // ATENÇÃO: Se as variáveis Cognito__AccessKey ou Cognito__SecretKey
-                    // estiverem erradas no Railway, ESTE BLOCO VAI QUEBRAR O LOGIN.
                     try
                     {
                         var claimsIdentity = (ClaimsIdentity?)context?.Principal?.Identity;
                         var username = claimsIdentity?.Claims?.FirstOrDefault(x => x.Type == "username" || x.Type == "cognito:username")?.Value;
 
-                        // Ajuste para pegar o username correto do token se vier nulo acima
                         if (string.IsNullOrEmpty(username))
                         {
                             username = claimsIdentity?.Claims?.FirstOrDefault(x => x.Type.EndsWith("username"))?.Value;
@@ -194,7 +186,6 @@ public static class ServicesConfiguration
 
                             if (user != null && user.UserAttributes != null)
                             {
-                                // Adicionando claims extras
                                 var email = user.UserAttributes.FirstOrDefault(a => a.Name == "email")?.Value;
                                 if (!string.IsNullOrEmpty(email))
                                     claimsIdentity?.AddClaim(new Claim("cognito:email", email));
@@ -212,8 +203,6 @@ public static class ServicesConfiguration
                     }
                     catch (Exception ex)
                     {
-                        // Se der erro na AWS, logamos mas NÃO derrubamos o token. 
-                        // Assim o usuário loga, mesmo sem os dados extras.
                         Console.WriteLine($"Erro ao buscar dados no Cognito: {ex.Message}");
                     }
                 }

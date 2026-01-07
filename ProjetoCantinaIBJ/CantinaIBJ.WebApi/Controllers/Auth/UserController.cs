@@ -378,6 +378,7 @@ public class UserController : CoreController
     /// </summary>
     [ApiExplorerSettings(IgnoreApi = false)]
     [HttpGet("whoAmI")]
+    [Authorize(Policy.MASTERADMIN)]
     [ProducesResponseType(200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
