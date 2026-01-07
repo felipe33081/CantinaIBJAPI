@@ -19,7 +19,7 @@ COPY . /src/ProjetoCantinaIBJ/CantinaIBJ.Framework/CantinaIBJ.Framework.csproj
 COPY . /src/ProjetoCantinaIBJ/CantinaIBJ.Integration/CantinaIBJ.Integration.csproj
 RUN dotnet restore "./src/ProjetoCantinaIBJ/CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
 COPY . .
-WORKDIR "/src/CantinaIBJ.WebApi"
+WORKDIR "/src/ProjetoCantinaIBJ/CantinaIBJ.WebApi"
 RUN dotnet build "./CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
