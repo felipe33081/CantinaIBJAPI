@@ -13,7 +13,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY . .
-RUN dotnet restore "./CantinaIBJ.WebApi/CantinaIBJ.WebApi.csproj"
+RUN dotnet restore "CantinaIBJ.WebApi.csproj"
 COPY . .
 WORKDIR "/src/CantinaIBJ.WebApi"
 RUN dotnet build "./CantinaIBJ.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
