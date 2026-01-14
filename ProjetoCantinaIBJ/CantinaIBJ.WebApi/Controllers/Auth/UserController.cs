@@ -376,7 +376,7 @@ public class UserController : CoreController
     /// <summary>
     /// Suas informações
     /// </summary>
-    [ApiExplorerSettings(IgnoreApi = false)]
+    [ApiExplorerSettings(IgnoreApi = true)]
     [HttpGet("whoAmI")]
     [Authorize(Policy.MASTERADMIN)]
     [ProducesResponseType(200)]

@@ -80,6 +80,12 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
                 case "statusDisplay_DESC":
                     query = query.OrderByDescending(t => t.Status);
                     break;
+                case "totalValue_ASC":
+                    query = query.OrderBy(t => t.TotalValue);
+                    break;
+                case "totalValue_DESC":
+                    query = query.OrderByDescending(t => t.TotalValue);
+                    break;
                 case "id_DESC":
                     query = query.OrderByDescending(t => t.Id);
                     break;

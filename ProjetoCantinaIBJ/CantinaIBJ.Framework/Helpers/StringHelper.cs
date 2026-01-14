@@ -36,10 +36,31 @@ namespace CantinaIBJ.Framework.Helpers
             if (string.IsNullOrEmpty(value))
                 return "";
 
-            var r = new System.Text.RegularExpressions.Regex("(?:[^a-z0-9 ]|(?<=['\"])s)",
+            var r = new Regex("(?:[^a-z0-9 ]|(?<=['\"])s)",
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
             return r.Replace(value, String.Empty);
+        }
+
+        public static string RemoveAccents(this string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return text;
+
+            var textNormalizado = text.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder();
+
+            foreach (var c in textNormalizado)
+            {
+                var categoriaUnicode = CharUnicodeInfo.GetUnicodeCategory(c);
+
+                if (categoriaUnicode != UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return sb.ToString().Normalize(NormalizationForm.FormC);
         }
 
         public static string NormalizeString(this string value)

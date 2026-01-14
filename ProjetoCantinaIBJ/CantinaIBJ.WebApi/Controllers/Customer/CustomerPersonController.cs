@@ -48,7 +48,7 @@ public class CustomerPersonController : CoreController
     /// <param name="page"></param>
     /// <param name="size"></param>
     /// <param name="name"></param>
-    /// <param name="email"></param>
+    /// <param name="phone"></param>
     /// <param name="searchString"></param>
     /// <param name="isDeleted"></param>
     /// <param name="orderBy"></param>
@@ -202,7 +202,7 @@ public class CustomerPersonController : CoreController
             try
             {
                 string message = $"*Cantina IBJ*\n\nOlá, *{customer.Name}*.\nSua conta foi aberta no retiro IBJ 2026!";
-                await _whatsGWService.WhatsSendMessage("55" + customer.Phone, message);
+                //await _whatsGWService.WhatsSendMessage("55" + customer.Phone, message);
             }
             catch { }
 

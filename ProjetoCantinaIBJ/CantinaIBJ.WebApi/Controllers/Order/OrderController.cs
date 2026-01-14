@@ -5,6 +5,7 @@ using CantinaIBJ.Integration.WhatsGW;
 using CantinaIBJ.Model;
 using CantinaIBJ.Model.Customer;
 using CantinaIBJ.Model.Enumerations;
+using CantinaIBJ.Model.Interfaces;
 using CantinaIBJ.Model.Orders;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Controllers.Core;
@@ -26,6 +27,7 @@ public class OrderController : CoreController
     readonly IProductRepository _productRepository;
     readonly ICustomerPersonRepository _customerPersonRepository;
     readonly IWhatsGWService _whatsGWService;
+    readonly IPrinterService _printerService;
     readonly OrderHelper _orderHelper;
     readonly IMapper _mapper;
     readonly HttpUserContext _userContext;
@@ -39,7 +41,8 @@ public class OrderController : CoreController
         ICustomerPersonRepository customerPersonRepository,
         OrderHelper orderHelper,
         IProductRepository productRepository,
-        IWhatsGWService whatsGWService)
+        IWhatsGWService whatsGWService,
+        IPrinterService printerService)
     {
         _mapper = mapper;
         _logger = logger;
@@ -49,6 +52,7 @@ public class OrderController : CoreController
         _orderHelper = orderHelper;
         _productRepository = productRepository;
         _whatsGWService = whatsGWService;
+        _printerService = printerService;
     }
 
     /// <summary>
@@ -375,6 +379,9 @@ public class OrderController : CoreController
             if (order == null)
                 return NotFound(new { errors = "Pedido não encontrado" });
 
+            if (order.Products.Count <= 0)
+                return BadRequest(new { errors = "Não é possível finalizar pedido sem produtos selecionados" });
+
             if (requestModel.PaymentOfType == PaymentOfType.Money && requestModel.PaymentValue < order.TotalValue)
                 return BadRequest(new { errors = "Valor do pagamento em dinheiro não pode ser menor que o valor total do pedido, favor utilizar opção 'Fiado(em conta)'" });
 
@@ -445,6 +452,15 @@ public class OrderController : CoreController
                     await _whatsGWService.WhatsSendMessage("55" + customerPerson.Phone, message);
                 }
                 catch { }
+            }
+
+            try
+            {
+                _printerService.ImprimirPedido(order);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Erro ao imprimir: {ex.Message}");
             }
 
             return NoContent();
@@ -565,6 +581,41 @@ public class OrderController : CoreController
             order.UpdatedBy = contextUser.GetCurrentUser();
 
             await _orderRepository.UpdateAsync(order);
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return LoggerBadRequest(e, _logger);
+        }
+    }
+
+    /// <summary>
+    /// Imprimir um pedido
+    /// </summary>
+    /// <remarks>Imprimir um pedido</remarks>
+    /// <param name="id">Id do pedido</param>
+    [HttpPost("{id}/orderPrinted")]
+    [Authorize(Policy.USER)]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> OrderPrinted([FromRoute] int id)
+    {
+        try
+        {
+            var contextUser = _userContext.GetContextUser();
+
+            var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
+            if (order == null)
+                return NotFound(new { errors = "Pedido não encontrado" });
+
+            try
+            {
+                _printerService.ImprimirPedido(order);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Erro ao imprimir: {ex.Message}");
+            }
 
             return NoContent();
         }

@@ -10,6 +10,7 @@ using CantinaIBJ.Data.Repositories.Dashboard;
 using CantinaIBJ.Integration.Cognito;
 using CantinaIBJ.Integration.WhatsGW;
 using CantinaIBJ.Model.AppSettings;
+using CantinaIBJ.Model.Interfaces;
 using CantinaIBJ.WebApi.Common;
 using CantinaIBJ.WebApi.Helpers;
 using CantinaIBJ.WebApi.Mapper;
@@ -64,6 +65,8 @@ public static class ServicesConfiguration
         services.AddScoped<ICognitoCommunication, CognitoCommunication>();
 
         services.AddScoped<IWhatsGWService, WhatsGWCommunication>();
+
+        services.AddScoped<IPrinterService, PrinterService>();
 
         return services;
     }
