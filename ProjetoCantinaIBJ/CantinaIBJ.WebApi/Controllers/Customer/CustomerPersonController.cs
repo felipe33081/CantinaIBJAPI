@@ -131,9 +131,12 @@ public class CustomerPersonController : CoreController
             if (customerPerson == null)
                 return NotFound(new { errors = "Cliente não encontrado" });
 
-            var readCustomerPerson = _mapper.Map<CustomerPersonReadModel>(customerPerson);
+            var orders = await _orderRepository.GetAllByCustomerId(customerPerson.Id); // Busca os pedidos relacionados ao cliente
 
-            return Ok(readCustomerPerson);
+            var customerReadModel = _mapper.Map<CustomerPersonReadModel>(customerPerson);
+            customerReadModel.Orders = _mapper.Map<List<OrderReadModel>>(orders);
+
+            return Ok(customerReadModel);
         }
         catch (Exception e)
         {
@@ -302,7 +305,47 @@ public class CustomerPersonController : CoreController
                 await _whatsGWService.WhatsSendMessage("55" + customerPerson.Phone, message);
             }
             catch { }
-            
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return LoggerBadRequest(e, _logger);
+        }
+    }
+
+    /// <summary>
+    /// Atualiza o saldo de um cliente
+    /// </summary>
+    /// <param name="id">Id do cliente</param>
+    /// <param name="balance">Novo saldo</param>
+    /// <response code="204">Sucesso</response>
+    /// <response code="400">Modelo inválido</response>
+    /// <response code="401">Não autorizado</response>
+    /// <response code="403">Acesso negado</response>
+    /// <response code="404">Chave não encontrada</response>
+    [HttpPut("{id}/updateBalance")]
+    [Authorize(Policy.ADMIN)]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> ZeraConta([FromRoute] int id, [FromBody] decimal balance)
+    {
+        if (!ModelState.IsValid)
+            return NotFound(new { errors = "Modelo não é válido" });
+
+        try
+        {
+            var contextUser = _userContext.GetContextUser();
+
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
+            if (customerPerson is null)
+                return NotFound(new { errors = "Cliente não encontrado" });
+
+            customerPerson.Balance = balance;
+            customerPerson.UpdatedAt = DateTime.UtcNow;
+            customerPerson.UpdatedBy = contextUser.GetCurrentUser();
+
+            await _customerPersonRepository.UpdateAsync(customerPerson);
+
             return NoContent();
         }
         catch (Exception e)
@@ -339,7 +382,7 @@ public class CustomerPersonController : CoreController
                 foreach (var order in orders)
                 {
                     if (order.Status == OrderStatus.InProgress && order.IsDeleted == false)
-                    return StatusCode(400, new { errors = "Não é possível excluir cliente com pedidos em andamento" });
+                        return StatusCode(400, new { errors = "Não é possível excluir cliente com pedidos em andamento" });
                 }
             }
 

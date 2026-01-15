@@ -122,7 +122,7 @@ public class ProductController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPost]
-    [Authorize(Policy.ADMIN)]
+    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(Guid), 200)]
     public async Task<IActionResult> Create([FromBody] ProductCreateModel model)
     {
