@@ -6,22 +6,27 @@ using ESCPOS_NET.Utilities;
 
 public class PrinterService(IConfiguration configuration) : IPrinterService
 {
+    private readonly string _nomeImpressora = configuration["Printer:Name"];
+    private readonly string _qrCodePix = configuration["Printer:PixCopiaECola"];
+
     public void ImprimirPedido(Order pedido)
     {
-        string nomeImpressora = "POS58 10.0.0.6";
-
         var e = new EPSON();
 
+        var nameCustomerPerson = pedido.CustomerPerson != null ? pedido.CustomerPerson.Name : pedido.CustomerName;
         var payload = ByteSplicer.Combine(
             e.CenterAlign(),
             e.PrintLine(" "),
             e.PrintLine(" "),
-            e.PrintLine("--- CANTINA IBJ ---"),
+            e.PrintLine("CANTINA IBJ"),
             e.PrintLine($"Pedido #{pedido.Id}"),
             e.LeftAlign(),
             e.PrintLine($"Data: {DateTime.Now:g}"),
+            e.PrintLine($"Cliente: {nameCustomerPerson}"),
             e.PrintLine(" "),
             e.PrintLine("--------------------------------"),
+            e.PrintLine(" "),
+            e.PrintLine("QNTD  x  DESC.  x   VALOR UNIT."),
             e.PrintLine(" ")
         );
 
@@ -36,14 +41,54 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
         payload = ByteSplicer.Combine(payload,
             e.PrintLine(" "),
             e.PrintLine("--------------------------------"),
+            e.LeftAlign(),
+            e.PrintLine(" "),
+            e.PrintLine($"Pagamento: {pedido.PaymentOfType.ToDescription().RemoveAccents()}"),
             e.RightAlign(),
             e.PrintLine(" "),
-            e.PrintLine($"TOTAL: R$ {pedido.TotalValue:F2}"),
-            e.PrintLine(" "),
-            e.PrintLine(" "),
-            e.FullCut()
+            e.PrintLine($"TOTAL: R$ {pedido.TotalValue:F2}")
         );
 
-        RawPrinterHelper.SendBytesToPrinter(nomeImpressora, payload);
+        if (pedido.PaymentOfType == CantinaIBJ.Model.Enumerations.PaymentOfType.PIX)
+        {
+            string chavePix = _qrCodePix;
+
+            payload = ByteSplicer.Combine(payload,
+                e.CenterAlign(),
+                e.PrintLine(" "),
+                e.PrintLine("Pague com Pix:"),
+                e.PrintLine(" "),
+                e.PrintQRCode(chavePix),
+                e.PrintLine(" "),
+                e.PrintLine("Obrigado pela preferencia!"),
+                e.PrintLine(" "),
+                e.FullCut()
+            );
+        }
+        else if (pedido.PaymentOfType == CantinaIBJ.Model.Enumerations.PaymentOfType.Money)
+        {
+            payload = ByteSplicer.Combine(payload,
+                e.RightAlign(),
+                e.PrintLine($"Dinheiro: R$ {pedido.PaymentValue:F2}"),
+                e.PrintLine($"Troco: R$ {pedido.ChangeValue:F2}"),
+                e.PrintLine(" "),
+                e.CenterAlign(),
+                e.PrintLine("Obrigado pela preferencia!"),
+                e.PrintLine(" "),
+                e.FullCut()
+            );
+        }
+        else
+        {
+            payload = ByteSplicer.Combine(payload,
+                e.CenterAlign(),
+                e.PrintLine(" "),
+                e.PrintLine("Obrigado pela preferencia!"),
+                e.PrintLine(" "),
+                e.FullCut()
+            );
+        }
+
+        RawPrinterHelper.SendBytesToPrinter(_nomeImpressora, payload);
     }
 }

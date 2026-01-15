@@ -14,7 +14,7 @@ public enum PaymentOfType
     [Description("Cartão de Crédito")]
     CreditCard = 3,
 
-    [Description("Fiado(em conta)")]
+    [Description("Débito em conta")]
     Debitor = 4,
     [Description("Crédito na conta")]
     ExtraMoney =5
