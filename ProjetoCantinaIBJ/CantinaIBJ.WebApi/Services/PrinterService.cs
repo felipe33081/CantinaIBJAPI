@@ -17,7 +17,6 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
         var payload = ByteSplicer.Combine(
             e.CenterAlign(),
             e.PrintLine(" "),
-            e.PrintLine(" "),
             e.PrintLine("CANTINA IBJ"),
             e.PrintLine($"Pedido #{pedido.Id}"),
             e.LeftAlign(),
@@ -33,9 +32,20 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
         foreach (var item in pedido.Products)
         {
             var nomeProduto = item.Product.Name.RemoveAccents();
-            payload = ByteSplicer.Combine(payload,
-                e.PrintLine($"{item.Quantity}x {nomeProduto} - R$ {item.Product.Price:F2}")
-            );
+            var descriptionProduto = item.Product.Description?.RemoveAccents();
+            if (string.IsNullOrEmpty(descriptionProduto))
+            {
+                payload = ByteSplicer.Combine(payload,
+                    e.PrintLine($"{item.Quantity}x {nomeProduto} - R$ {item.Product.Price:F2}")
+                );
+            }
+            else
+            {
+                payload = ByteSplicer.Combine(payload,
+                    e.PrintLine($"{item.Quantity}x {nomeProduto} - R$ {item.Product.Price:F2}"),
+                    e.PrintLine($"     {descriptionProduto}")
+                );
+            }
         }
 
         payload = ByteSplicer.Combine(payload,
