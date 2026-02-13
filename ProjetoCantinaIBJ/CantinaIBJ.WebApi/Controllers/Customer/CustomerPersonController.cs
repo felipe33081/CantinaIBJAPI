@@ -165,7 +165,7 @@ public class CustomerPersonController : CoreController
 
             CustomerPerson customer;
 
-            if (model.Phone != null)
+            if (!string.IsNullOrEmpty(model.Phone))
             {
                 string cleanedPhone = System.Text.RegularExpressions.Regex.Replace(model.Phone.ToString(), @"[()\s-]", "");
 
@@ -245,7 +245,7 @@ public class CustomerPersonController : CoreController
         {
             var contextUser = _userContext.GetContextUser();
 
-            if (updateModel.Phone != null)
+            if (!string.IsNullOrEmpty(updateModel.Phone))
             {
                 string cleanedPhone = System.Text.RegularExpressions.Regex.Replace(updateModel.Phone.ToString(), @"[()\s-]", "");
 
