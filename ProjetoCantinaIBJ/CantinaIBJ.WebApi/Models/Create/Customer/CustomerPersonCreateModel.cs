@@ -19,6 +19,5 @@ public class CustomerPersonCreateModel : BaseCreateModel
     /// <summary>
     /// Celular do cliente
     /// </summary>
-    [Required(ErrorMessage = "Obrigatório informar o Celular")]
-    public string Phone { get; set; }
+    public string? Phone { get; set; }
 }

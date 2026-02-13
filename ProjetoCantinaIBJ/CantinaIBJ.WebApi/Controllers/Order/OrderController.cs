@@ -449,7 +449,8 @@ public class OrderController : CoreController
                     message += $"\n*Valor total do pedido:* R$ {order.TotalValue:F2}";
 
                     // Envia a mensagem usando o serviço WhatsApp
-                    await _whatsGWService.WhatsSendMessage("55" + customerPerson.Phone, message);
+                    if (customerPerson.Phone != null)
+                        await _whatsGWService.WhatsSendMessage("55" + customerPerson.Phone, message);
                 }
                 catch { }
             }

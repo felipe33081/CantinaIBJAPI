@@ -13,8 +13,7 @@ public class CustomerPerson : BaseModel
 
     public string? Email { get; set; }
 
-    [Required]
-    public string Phone { get; set; }
+    public string? Phone { get; set; }
 
     public decimal? Balance { get; set; } = 0;
 }

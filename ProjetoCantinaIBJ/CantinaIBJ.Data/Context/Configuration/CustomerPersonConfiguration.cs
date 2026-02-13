@@ -1,9 +1,6 @@
-﻿using CantinaIBJ.Model;
-using CantinaIBJ.Model.Customer;
-using CantinaIBJ.Model.Orders;
+﻿using CantinaIBJ.Model.Customer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System.Reflection.Emit;
 
 namespace CantinaIBJ.Data.Context.Configuration;
 
@@ -15,5 +12,9 @@ internal class CustomerPersonConfiguration : IEntityTypeConfiguration<CustomerPe
 
         builder
             .HasKey(k => k.Id);
+
+        builder
+            .HasIndex(p => p.Name)
+            .IsUnique();
     }
 }
