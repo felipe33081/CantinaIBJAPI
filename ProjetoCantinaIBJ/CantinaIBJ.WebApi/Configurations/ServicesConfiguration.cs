@@ -7,7 +7,6 @@ using CantinaIBJ.Data.Contracts.Dashboard;
 using CantinaIBJ.Data.Repositories;
 using CantinaIBJ.Data.Repositories.Customer;
 using CantinaIBJ.Data.Repositories.Dashboard;
-using CantinaIBJ.Integration.Cognito;
 using CantinaIBJ.Integration.WhatsGW;
 using CantinaIBJ.Model.AppSettings;
 using CantinaIBJ.Model.Interfaces;
@@ -47,22 +46,16 @@ public static class ServicesConfiguration
     {
         services.Configure<WhatsGWSettings>(config.GetSection("WhatsGW"));
         services.Configure<SendEmailSettings>(config.GetSection("SendEmail"));
-        services.Configure<CognitoSettings>(config.GetSection("Cognito"));
 
         services.AddScoped<Mappers>();
         services.AddScoped<MapperProfile>();
 
-        services.AddScoped<HttpUserContext>();
         services.AddHttpContextAccessor();
 
         services.AddScoped<OrderHelper>();
         services.AddScoped<SmtpHelper>();
 
         services.AddScoped<ValidateModelAttribute>();
-
-        services.AddScoped<CognitoSettings>();
-
-        services.AddScoped<ICognitoCommunication, CognitoCommunication>();
 
         services.AddScoped<IWhatsGWService, WhatsGWCommunication>();
 
@@ -77,9 +70,9 @@ public static class ServicesConfiguration
         {
             c.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title = "Cantina IBJ",
-                Version = $"v1",
-                Description = "API que permite um controle sobre as vendas de uma cantina",
+                Title = "F&S Software solutions",
+                Version = $"v0.1",
+                Description = "API que permite um controle sobre suas vendas",
                 Contact = new OpenApiContact
                 {
                     Email = "felipenogueirap7@gmail.com",
@@ -94,7 +87,6 @@ public static class ServicesConfiguration
                     Name = "Authorization",
                     Type = SecuritySchemeType.ApiKey
                 });
-
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
                     {
@@ -133,118 +125,4 @@ public static class ServicesConfiguration
         });
     }
 
-    public static void AddAuthenticationCIBJ(this IServiceCollection services, WebApplicationBuilder builder)
-    {
-        services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            options.Authority = builder.Configuration["Jwt:Issuer"];
-
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidIssuer = builder.Configuration["Jwt:Issuer"],
-
-                ValidateAudience = false,
-                ValidateLifetime = true,
-
-            };
-
-            options.Events = new JwtBearerEvents
-            {
-                OnAuthenticationFailed = context =>
-                {
-                    Console.WriteLine($"Token Falhou: {context.Exception.Message}");
-                    return Task.CompletedTask;
-                },
-
-                OnTokenValidated = async context =>
-                {
-                    try
-                    {
-                        var claimsIdentity = (ClaimsIdentity?)context?.Principal?.Identity;
-                        var username = claimsIdentity?.Claims?.FirstOrDefault(x => x.Type == "username" || x.Type == "cognito:username")?.Value;
-
-                        if (string.IsNullOrEmpty(username))
-                        {
-                            username = claimsIdentity?.Claims?.FirstOrDefault(x => x.Type.EndsWith("username"))?.Value;
-                        }
-
-                        if (!string.IsNullOrEmpty(username))
-                        {
-                            var cognitoClient = new AmazonCognitoIdentityProviderClient(
-                                builder.Configuration["Cognito:AccessKey"],
-                                builder.Configuration["Cognito:SecretKey"],
-                                RegionEndpoint.USEast2);
-
-                            var user = await cognitoClient.AdminGetUserAsync(new AdminGetUserRequest
-                            {
-                                UserPoolId = builder.Configuration["Cognito:UserPoolId"],
-                                Username = username
-                            });
-
-                            if (user != null && user.UserAttributes != null)
-                            {
-                                var email = user.UserAttributes.FirstOrDefault(a => a.Name == "email")?.Value;
-                                if (!string.IsNullOrEmpty(email))
-                                    claimsIdentity?.AddClaim(new Claim("cognito:email", email));
-
-                                var name = user.UserAttributes.FirstOrDefault(a => a.Name == "name")?.Value;
-                                if (!string.IsNullOrEmpty(name))
-                                    claimsIdentity?.AddClaim(new Claim("cognito:name", name));
-
-                                var phone_number = user.UserAttributes.FirstOrDefault(a => a.Name == "phone_number")?.Value;
-                                if (!string.IsNullOrEmpty(phone_number))
-                                    claimsIdentity?.AddClaim(new Claim("cognito:phone_number", phone_number));
-
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Erro ao buscar dados no Cognito: {ex.Message}");
-                    }
-                }
-            };
-        });
-
-        // Configuração das políticas de autorização
-        services.AddAuthorization(options =>
-        {
-            options.AddPolicy(Policy.MASTERADMIN, new AuthorizationPolicyBuilder()
-                .RequireAssertion(context =>
-                {
-                    return context.User.Claims.Any(c => c.Type == Cognito.GROUPS &&
-                                                        c.Value == Policy.MASTERADMIN) ? true : false;
-                })
-                .AddAuthenticationSchemes()
-                .RequireAuthenticatedUser()
-                .Build());
-
-            options.AddPolicy(Policy.ADMIN, new AuthorizationPolicyBuilder()
-                .RequireAssertion(context =>
-                {
-                    return context.User.Claims.Any(c => c.Type == Cognito.GROUPS &&
-                                                        new List<string> { Group.MASTERADMIN, Group.ADMIN }.Contains(c.Value)) ? true : false;
-                })
-                .AddAuthenticationSchemes()
-                .RequireAuthenticatedUser()
-                .Build());
-
-            options.AddPolicy(Policy.USER, new AuthorizationPolicyBuilder()
-                .RequireAssertion(context =>
-                {
-                    return context.User.Claims.Any(c => c.Type == Cognito.GROUPS &&
-                                                        new List<string> { Group.USER, Group.ADMIN, Group.MASTERADMIN }.Contains(c.Value)) ? true : false;
-                })
-                .AddAuthenticationSchemes()
-                .RequireAuthenticatedUser()
-                .Build());
-        });
-
-    }
 }

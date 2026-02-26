@@ -22,7 +22,7 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
             .Count();
     }
 
-    public async Task<ListDataPagination<CustomerPerson>> GetListCustomerPersons(UserContext contextUser, int page, int size, string? name, string? phone, string? searchString, bool isDeleted, string? orderBy)
+    public async Task<ListDataPagination<CustomerPerson>> GetListCustomerPersons(int page, int size, string? name, string? phone, string? searchString, bool isDeleted, string? orderBy)
     {
         var query = Context.CustomerPerson
             .Where(x => x.IsDeleted == false);
@@ -126,7 +126,7 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
         return data;
     }
 
-    public async Task<CustomerPerson> GetCustomerPersonByIdAsync(UserContext user, int id)
+    public async Task<CustomerPerson> GetCustomerPersonByIdAsync(int id)
     {
         var query = await Context.CustomerPerson
             .Where(x => x.IsDeleted == false)
@@ -135,7 +135,7 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
         return query;
     }
 
-    public async Task<CustomerPerson> GetCustomerPersonByNameAsync(UserContext user, string name)
+    public async Task<CustomerPerson> GetCustomerPersonByNameAsync(string name)
     {
         var query = await Context.CustomerPerson
             .Where(x => x.Name.ToLower() == name)
@@ -144,10 +144,8 @@ public class CustomerPersonRepository : RepositoryBase<CustomerPerson>, ICustome
         return query;
     }
 
-    public async Task AddCustomerPersonAsync(UserContext user, CustomerPerson customerPerson)
+    public async Task AddCustomerPersonAsync(CustomerPerson customerPerson)
     {
-        customerPerson.CreatedBy = user.GetCurrentUser();
-
         await Context.AddAsync(customerPerson);
         await Context.SaveChangesAsync();
     }

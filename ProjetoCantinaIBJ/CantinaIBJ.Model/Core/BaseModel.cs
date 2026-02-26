@@ -12,6 +12,6 @@ public class BaseModel : IModel
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
 
-    public string CreatedBy { get; set; }
+    public string CreatedBy { get; set; } = "Usuário Master";
     public string? UpdatedBy { get; set; }
 }

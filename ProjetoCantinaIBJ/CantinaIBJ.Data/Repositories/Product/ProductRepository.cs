@@ -23,7 +23,7 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
             .Count();
     }
 
-    public async Task<ListDataPagination<Product>> GetListProducts(UserContext contextUser, int page, int size, string? name, string? description, string? searchString, bool isDeleted, string? orderBy)
+    public async Task<ListDataPagination<Product>> GetListProducts(int page, int size, string? name, string? description, string? searchString, bool isDeleted, string? orderBy)
     {
         var query = Context.Product
             .Where(x => x.IsDeleted == false);
@@ -127,7 +127,7 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
         return data;
     }
 
-    public async Task<Product> GetProductByIdAsync(UserContext contextUser, int id)
+    public async Task<Product> GetProductByIdAsync(int id)
     {
         var query = await Context.Product
             .Where(x => x.IsDeleted == false)
@@ -136,10 +136,8 @@ public class ProductRepository : RepositoryBase<Product>, IProductRepository
         return query;
     }
 
-    public async Task AddProductAsync(UserContext contextUser, Product product)
+    public async Task AddProductAsync(Product product)
     {
-        product.CreatedBy = contextUser.GetCurrentUser();
-
         await Context.AddAsync(product);
         await Context.SaveChangesAsync();
     }

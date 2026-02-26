@@ -7,7 +7,7 @@ namespace CantinaIBJ.Data.Contracts;
 public interface IProductRepository : IRepositoryBase<Product>
 {
     Task<int> GetCountList();
-    Task<ListDataPagination<Product>> GetListProducts(UserContext contextUser, int page, int size, string? name, string? description, string? searchString, bool isDeleted, string? orderBy);
-    Task<Product> GetProductByIdAsync(UserContext contextUser, int id);
-    Task AddProductAsync(UserContext contextUser, Product product);
+    Task<ListDataPagination<Product>> GetListProducts(int page, int size, string? name, string? description, string? searchString, bool isDeleted, string? orderBy);
+    Task<Product> GetProductByIdAsync(int id);
+    Task AddProductAsync(Product product);
 }

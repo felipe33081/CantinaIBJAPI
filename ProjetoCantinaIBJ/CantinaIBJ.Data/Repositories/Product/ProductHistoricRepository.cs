@@ -13,21 +13,19 @@ public class ProductHistoricRepository : RepositoryBase<ProductHistoric>, IProdu
 
     }
 
-    public async Task<List<ProductHistoric>> GetProductHistorics(UserContext contextUser)
+    public async Task<List<ProductHistoric>> GetProductHistorics()
     {
         return await Context.ProductHistoric.ToListAsync();
     }
 
-    public async Task<ProductHistoric> GetProductHistoricByIdAsync(UserContext contextUser, int id)
+    public async Task<ProductHistoric> GetProductHistoricByIdAsync(int id)
     {
         return await Context.ProductHistoric
             .SingleOrDefaultAsync(x => x.Id == id);
     }
 
-    public async Task AddProductHistoricAsync(UserContext contextUser, ProductHistoric productHistoric)
+    public async Task AddProductHistoricAsync(ProductHistoric productHistoric)
     {
-        productHistoric.CreatedBy = contextUser.GetCurrentUser();
-
         await Context.AddAsync(productHistoric);
         await Context.SaveChangesAsync();
     }

@@ -19,7 +19,7 @@ public class OrderHelper
         _customerPersonRepository = customerPersonRepository;
     }
 
-    public async Task UpdateCalculatePaymentsOrder(UserContext contextUser, Order order, FinalizeOrderRequestModel requestModel, CustomerPerson? customerPerson = null)
+    public async Task UpdateCalculatePaymentsOrder(Order order, FinalizeOrderRequestModel requestModel, CustomerPerson? customerPerson = null)
     {
         try
         {
@@ -32,7 +32,6 @@ public class OrderHelper
                     order.ChangeValue = paymentValue - order.TotalValue;
                     order.Status = OrderStatus.Finished;
                     order.UpdatedAt = DateTime.UtcNow;
-                    order.UpdatedBy = contextUser.GetCurrentUser();
                     await _orderRepository.UpdateAsync(order);
 
                     break;
@@ -49,7 +48,6 @@ public class OrderHelper
 
                         order.Status = OrderStatus.Finished;
                         order.UpdatedAt = DateTime.UtcNow;
-                        order.UpdatedBy = contextUser.GetCurrentUser();
                         await _orderRepository.UpdateAsync(order);
 
                         break;
@@ -69,7 +67,6 @@ public class OrderHelper
 
                         order.Status = OrderStatus.Finished;
                         order.UpdatedAt = DateTime.UtcNow;
-                        order.UpdatedBy = contextUser.GetCurrentUser();
                         await _orderRepository.UpdateAsync(order);
 
                         break;
@@ -82,7 +79,6 @@ public class OrderHelper
             order.PaymentOfType = paymentOfType;
             order.PaymentValue = requestModel.PaymentValue;
             order.UpdatedAt = DateTime.UtcNow;
-            order.UpdatedBy = contextUser.GetCurrentUser();
             await _orderRepository.UpdateAsync(order);
         }
         catch (Exception ex)

@@ -39,7 +39,7 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
             .ToListAsync();
     }
 
-    public async Task<ListDataPagination<Order>> GetListOrders(UserContext contextUser, int page, int size, string? searchString, int? id, bool isDeleted, string? orderBy, OrderStatus? status)
+    public async Task<ListDataPagination<Order>> GetListOrders(int page, int size, string? searchString, int? id, bool isDeleted, string? orderBy, OrderStatus? status)
     {
         var query = Context.Order
             .Include(x => x.CustomerPerson)
@@ -129,7 +129,7 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         return query;
     }
 
-    public async Task<Order?> GetOrderByIdAsync(UserContext contextUser, int id)
+    public async Task<Order?> GetOrderByIdAsync(int id)
     {
         var query = await Context.Order
             .Include(x => x.CustomerPerson)
@@ -140,10 +140,8 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         return query;
     }
 
-    public async Task AddOrderAsync(UserContext contextUser, Order order)
+    public async Task AddOrderAsync(Order order)
     {
-        order.CreatedBy = contextUser.GetCurrentUser();
-
         await Context.AddAsync(order);
         await Context.SaveChangesAsync();
     }

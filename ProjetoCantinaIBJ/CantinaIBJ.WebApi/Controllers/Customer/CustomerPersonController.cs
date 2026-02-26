@@ -11,9 +11,7 @@ using CantinaIBJ.WebApi.Models.Create.Customer;
 using CantinaIBJ.WebApi.Models.Read.Customer;
 using CantinaIBJ.WebApi.Models.Read.Order;
 using CantinaIBJ.WebApi.Models.Update.Customer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static CantinaIBJ.WebApi.Common.Constants;
 
 namespace CantinaIBJ.WebApi.Controllers.Customer;
 
@@ -23,21 +21,18 @@ public class CustomerPersonController : CoreController
     readonly ICustomerPersonRepository _customerPersonRepository;
     readonly IMapper _mapper;
     readonly ILogger<CustomerPersonController> _logger;
-    readonly HttpUserContext _userContext;
     readonly IOrderRepository _orderRepository;
 
     public CustomerPersonController(
         IMapper mapper,
         ILogger<CustomerPersonController> logger,
         ICustomerPersonRepository customerPersonRepository,
-        HttpUserContext userContext,
         IOrderRepository orderRepository,
         IWhatsGWService whatsGWService)
     {
         _mapper = mapper;
         _logger = logger;
         _customerPersonRepository = customerPersonRepository;
-        _userContext = userContext;
         _orderRepository = orderRepository;
         _whatsGWService = whatsGWService;
     }
@@ -56,7 +51,7 @@ public class CustomerPersonController : CoreController
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     [HttpGet]
-    [Authorize(Policy.USER)]
+    
     [ProducesResponseType(typeof(ListDataPagination<CustomerPersonReadModel>), 200)]
     public async Task<IActionResult> ListAsync(
         [FromQuery] int page = 0,
@@ -69,14 +64,14 @@ public class CustomerPersonController : CoreController
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
+            
 
             var nameLowed = string.Empty;
             var phoneLowed = string.Empty;
             if (!string.IsNullOrEmpty(name)) { nameLowed = name?.ToLower(); }
             if (!string.IsNullOrEmpty(phone)) { phoneLowed = phone?.ToLower(); }
 
-            var customers = await _customerPersonRepository.GetListCustomerPersons(contextUser, page, size, nameLowed, phone, searchString, isDeleted, orderBy);
+            var customers = await _customerPersonRepository.GetListCustomerPersons(page, size, nameLowed, phone, searchString, isDeleted, orderBy);
 
             // Para cada cliente, obtenha os pedidos associados
             var customerWithOrders = new List<CustomerPersonReadModel>();
@@ -119,15 +114,15 @@ public class CustomerPersonController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpGet("{id}")]
-    [Authorize(Policy.USER)]
+    
     [ProducesResponseType(typeof(CustomerPersonReadModel), 200)]
     public async Task<IActionResult> GetById([FromRoute] int id)
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
+            
 
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
             if (customerPerson == null)
                 return NotFound(new { errors = "Cliente não encontrado" });
 
@@ -152,7 +147,7 @@ public class CustomerPersonController : CoreController
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     [HttpPost]
-    [Authorize(Policy.USER)]
+    
     [ProducesResponseType(typeof(int), 200)]
     public async Task<IActionResult> Create([FromBody] CustomerPersonCreateModel model)
     {
@@ -161,7 +156,7 @@ public class CustomerPersonController : CoreController
 
         try
         {
-            var contextUser = _userContext.GetContextUser();
+            
 
             CustomerPerson customer;
 
@@ -180,7 +175,7 @@ public class CustomerPersonController : CoreController
             }
 
             var nameLowed = model.Name.ToLower();
-            customer = await _customerPersonRepository.GetCustomerPersonByNameAsync(contextUser, nameLowed);
+            customer = await _customerPersonRepository.GetCustomerPersonByNameAsync(nameLowed);
             if (customer != null)
             {
                 if (customer.IsDeleted == false)
@@ -191,7 +186,6 @@ public class CustomerPersonController : CoreController
                 customer.UpdatedAt = null;
                 customer.UpdatedBy = null;
                 customer.CreatedAt = DateTime.UtcNow;
-                customer.CreatedBy = contextUser.Name;
                 customer.IsDeleted = false;
                 customer.Email = string.Empty;
                 if (!string.IsNullOrEmpty(model.Email))
@@ -202,7 +196,7 @@ public class CustomerPersonController : CoreController
             else
             {
                 customer = _mapper.Map<CustomerPerson>(model);
-                await _customerPersonRepository.AddCustomerPersonAsync(contextUser, customer);
+                await _customerPersonRepository.AddCustomerPersonAsync(customer);
             }
 
             try
@@ -234,7 +228,6 @@ public class CustomerPersonController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}")]
-    [Authorize(Policy.ADMIN)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] CustomerPersonUpdateModel updateModel)
     {
@@ -243,7 +236,7 @@ public class CustomerPersonController : CoreController
 
         try
         {
-            var contextUser = _userContext.GetContextUser();
+            
 
             if (!string.IsNullOrEmpty(updateModel.Phone))
             {
@@ -259,14 +252,13 @@ public class CustomerPersonController : CoreController
                 updateModel.Phone = cleanedPhone;
             }
 
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
             if (customerPerson is null)
                 return NotFound(new { errors = "Cliente não encontrado" });
 
             _mapper.Map(updateModel, customerPerson);
 
             customerPerson.UpdatedAt = DateTime.UtcNow;
-            customerPerson.UpdatedBy = contextUser.GetCurrentUser();
 
             await _customerPersonRepository.UpdateAsync(customerPerson);
 
@@ -288,7 +280,6 @@ public class CustomerPersonController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}/resetAccount")]
-    [Authorize(Policy.ADMIN)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> ZeraConta([FromRoute] int id)
     {
@@ -297,15 +288,14 @@ public class CustomerPersonController : CoreController
 
         try
         {
-            var contextUser = _userContext.GetContextUser();
+            
 
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
             if (customerPerson is null)
                 return NotFound(new { errors = "Cliente não encontrado" });
 
             customerPerson.Balance = 0;
             customerPerson.UpdatedAt = DateTime.UtcNow;
-            customerPerson.UpdatedBy = contextUser.GetCurrentUser();
 
             await _customerPersonRepository.UpdateAsync(customerPerson);
 
@@ -337,7 +327,6 @@ public class CustomerPersonController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}/updateBalance")]
-    [Authorize(Policy.ADMIN)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> ZeraConta([FromRoute] int id, [FromBody] decimal balance)
     {
@@ -346,15 +335,14 @@ public class CustomerPersonController : CoreController
 
         try
         {
-            var contextUser = _userContext.GetContextUser();
+            
 
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
             if (customerPerson is null)
                 return NotFound(new { errors = "Cliente não encontrado" });
 
             customerPerson.Balance = balance;
             customerPerson.UpdatedAt = DateTime.UtcNow;
-            customerPerson.UpdatedBy = contextUser.GetCurrentUser();
 
             await _customerPersonRepository.UpdateAsync(customerPerson);
 
@@ -376,15 +364,14 @@ public class CustomerPersonController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpDelete("{id}")]
-    [Authorize(Policy.ADMIN)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
+            
 
-            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, id);
+            var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(id);
             if (customerPerson == null)
                 return NotFound(new { errors = "Cliente não encontrado" });
 
@@ -403,7 +390,6 @@ public class CustomerPersonController : CoreController
 
             customerPerson.IsDeleted = true;
             customerPerson.UpdatedAt = DateTimeOffset.UtcNow;
-            customerPerson.UpdatedBy = contextUser.GetCurrentUser();
 
             await _customerPersonRepository.UpdateAsync(customerPerson);
 

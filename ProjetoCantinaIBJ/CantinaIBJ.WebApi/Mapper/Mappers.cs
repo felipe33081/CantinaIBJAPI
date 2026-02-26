@@ -12,7 +12,7 @@ public class Mappers
         _productHistoricRepository = productHistoricRepository;
     }
 
-    public async Task ProductToProductHistoric(UserContext user, Product product)
+    public async Task ProductToProductHistoric(Product product)
     {
         ProductHistoric productHistoric = new()
         {
@@ -22,9 +22,8 @@ public class Mappers
             Quantity = product.Quantity,
             Description = product.Description,
             Diponibility = product.Disponibility,
-            UpdatedAt = DateTime.UtcNow,
-            UpdatedBy = user.GetCurrentUser()
+            UpdatedAt = DateTime.UtcNow
         };
-        await _productHistoricRepository.AddProductHistoricAsync(user, productHistoric);
+        await _productHistoricRepository.AddProductHistoricAsync(productHistoric);
     }
 }

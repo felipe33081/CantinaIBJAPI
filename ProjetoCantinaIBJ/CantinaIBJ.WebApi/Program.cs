@@ -40,8 +40,6 @@ services.AddMvcCore()
 
 services.ConfigureRepositories();
 
-services.AddAuthenticationCIBJ(builder);
-
 services.AddMemoryCache();
 
 services.AddCors(options =>
@@ -77,9 +75,9 @@ app.UseSwagger(x =>
 app.UseSwaggerUI(o =>
 {
     o.RoutePrefix = "docs";
-    o.SwaggerEndpoint("/docs/v1/docs.json", "Cantina IBJ");
+    o.SwaggerEndpoint("/docs/v1/docs.json", "Sistema de gestão");
     o.DefaultModelsExpandDepth(-1);
-    o.DocumentTitle = "C.IBJ API";
+    o.DocumentTitle = "Sistema de Gestao API";
     o.DisplayRequestDuration();
     o.EnableValidator(null);
 });
@@ -115,8 +113,8 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseAuthentication();
-app.UseAuthorization();
+//app.UseAuthentication();
+//app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
 {

@@ -18,21 +18,18 @@ public class ProductController : CoreController
     readonly IProductRepository _productRepository;
     readonly Mappers _mappers;
     readonly IMapper _mapper;
-    readonly HttpUserContext _userContext;
     readonly ILogger<ProductController> _logger;
 
     public ProductController(
         IMapper mapper,
         ILogger<ProductController> logger,
         IProductRepository productRepository,
-        Mappers mappers,
-        HttpUserContext userContext)
+        Mappers mappers)
     {
         _mapper = mapper;
         _logger = logger;
         _productRepository = productRepository;
         _mappers = mappers;
-        _userContext = userContext;
     }
 
     /// <summary>
@@ -49,7 +46,6 @@ public class ProductController : CoreController
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     [HttpGet]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(ListDataPagination<ProductReadModel>), 200)]
     public async Task<IActionResult> ListAsync([FromQuery] int page = 0,
         [FromQuery] int size = 10,
@@ -61,9 +57,7 @@ public class ProductController : CoreController
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
-            var products = await _productRepository.GetListProducts(contextUser, page, size, name, description, searchString, isDeleted, orderBy);
+            var products = await _productRepository.GetListProducts(page, size, name, description, searchString, isDeleted, orderBy);
 
             var newData = new ListDataPagination<ProductReadModel>()
             {
@@ -91,15 +85,12 @@ public class ProductController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpGet("{id}")]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(ProductReadModel), 200)]
     public async Task<IActionResult> GetById([FromRoute] int id)
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
-            var product = await _productRepository.GetProductByIdAsync(contextUser, id);
+            var product = await _productRepository.GetProductByIdAsync(id);
             if (product == null)
                 return NotFound(new { errors = "Produto não encontrado" });
 
@@ -122,7 +113,6 @@ public class ProductController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPost]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(Guid), 200)]
     public async Task<IActionResult> Create([FromBody] ProductCreateModel model)
     {
@@ -131,8 +121,6 @@ public class ProductController : CoreController
 
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
             var product = _mapper.Map<Product>(model);
             
             if (product.Quantity > 0)
@@ -141,7 +129,7 @@ public class ProductController : CoreController
             if (product.Quantity < 0)
                 return BadRequest(new { errors = $"Não é possível adicionar um produto com quantidade menor que zero" });
 
-            await _productRepository.AddProductAsync(contextUser, product);
+            await _productRepository.AddProductAsync(product);
 
             return Ok(product.Id);
         }
@@ -161,7 +149,6 @@ public class ProductController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}")]
-    [Authorize(Policy.ADMIN)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProductUpdateModel updateModel)
     {
@@ -170,16 +157,13 @@ public class ProductController : CoreController
 
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
-            var product = await _productRepository.GetProductByIdAsync(contextUser, id);
+            var product = await _productRepository.GetProductByIdAsync(id);
             if (product is null)
                 return NotFound(new { errors = "Produto não encontrado" });
             
             _mapper.Map(updateModel, product);
 
             product.UpdatedAt = DateTimeOffset.UtcNow;
-            product.UpdatedBy = contextUser.GetCurrentUser();
 
             if (product.Quantity <= 0)
             {
@@ -194,7 +178,7 @@ public class ProductController : CoreController
             }
 
             await _productRepository.UpdateAsync(product);
-            await _mappers.ProductToProductHistoric(contextUser, product);
+            await _mappers.ProductToProductHistoric(product);
 
             return NoContent();
         }
@@ -213,21 +197,17 @@ public class ProductController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpDelete("{id}")]
-    [Authorize(Policy.ADMIN)]
     [ProducesResponseType(200)]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
-            var product = await _productRepository.GetProductByIdAsync(contextUser, id);
+            var product = await _productRepository.GetProductByIdAsync(id);
             if (product == null)
                 return NotFound(new { errors = "Produto não encontrado" });
 
             product.IsDeleted = true;
             product.UpdatedAt = DateTimeOffset.UtcNow;
-            product.UpdatedBy = contextUser.GetCurrentUser();
 
             await _productRepository.UpdateAsync(product);
 

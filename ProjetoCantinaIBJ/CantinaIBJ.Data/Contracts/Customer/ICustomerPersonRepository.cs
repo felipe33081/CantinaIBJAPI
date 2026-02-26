@@ -7,8 +7,8 @@ namespace CantinaIBJ.Data.Contracts.Customer;
 public interface ICustomerPersonRepository : IRepositoryBase<CustomerPerson>
 {
     Task<int> GetCountList();
-    Task<ListDataPagination<CustomerPerson>> GetListCustomerPersons(UserContext contextUser, int page, int size, string? name, string? email, string? searchString, bool isDeleted, string? orderBy);
-    Task<CustomerPerson> GetCustomerPersonByIdAsync(UserContext contextUser, int id);
-    Task<CustomerPerson> GetCustomerPersonByNameAsync(UserContext contextUser, string name);
-    Task AddCustomerPersonAsync(UserContext contextUser, CustomerPerson customerPerson);
+    Task<ListDataPagination<CustomerPerson>> GetListCustomerPersons(int page, int size, string? name, string? email, string? searchString, bool isDeleted, string? orderBy);
+    Task<CustomerPerson> GetCustomerPersonByIdAsync(int id);
+    Task<CustomerPerson> GetCustomerPersonByNameAsync(string name);
+    Task AddCustomerPersonAsync(CustomerPerson customerPerson);
 }

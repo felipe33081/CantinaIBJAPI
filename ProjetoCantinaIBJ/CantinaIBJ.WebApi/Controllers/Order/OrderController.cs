@@ -14,10 +14,8 @@ using CantinaIBJ.WebApi.Models;
 using CantinaIBJ.WebApi.Models.Create.Order;
 using CantinaIBJ.WebApi.Models.Read.Order;
 using CantinaIBJ.WebApi.Models.Update.Order;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Globalization;
-using static CantinaIBJ.WebApi.Common.Constants;
 
 namespace CantinaIBJ.WebApi.Controllers;
 
@@ -30,14 +28,12 @@ public class OrderController : CoreController
     readonly IPrinterService _printerService;
     readonly OrderHelper _orderHelper;
     readonly IMapper _mapper;
-    readonly HttpUserContext _userContext;
     readonly ILogger<OrderController> _logger;
 
     public OrderController(
         IMapper mapper,
         ILogger<OrderController> logger,
         IOrderRepository orderRepository,
-        HttpUserContext userContext,
         ICustomerPersonRepository customerPersonRepository,
         OrderHelper orderHelper,
         IProductRepository productRepository,
@@ -47,7 +43,6 @@ public class OrderController : CoreController
         _mapper = mapper;
         _logger = logger;
         _orderRepository = orderRepository;
-        _userContext = userContext;
         _customerPersonRepository = customerPersonRepository;
         _orderHelper = orderHelper;
         _productRepository = productRepository;
@@ -70,7 +65,6 @@ public class OrderController : CoreController
     /// <response code="401">Não autorizado</response>
     /// <response code="403">Acesso negado</response>
     [HttpGet]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(ListDataPagination<OrderReadModel>), 200)]
     public async Task<IActionResult> ListAsync(
         [FromQuery] int page = 0,
@@ -83,9 +77,7 @@ public class OrderController : CoreController
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
-            var orders = await _orderRepository.GetListOrders(contextUser, page, size, searchString, id, isDeleted, orderBy, status);
+            var orders = await _orderRepository.GetListOrders(page, size, searchString, id, isDeleted, orderBy, status);
 
             var newData = new ListDataPagination<OrderReadModel>()
             {
@@ -115,7 +107,6 @@ public class OrderController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpGet("{id}")]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(OrderReadModel), 200)]
     public async Task<IActionResult> GetById([FromRoute] int id)
     {
@@ -145,7 +136,6 @@ public class OrderController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPost]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(typeof(int), 201)]
     public async Task<IActionResult> Create([FromBody] OrderCreateModel model)
     {
@@ -154,8 +144,6 @@ public class OrderController : CoreController
 
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
             //validação para ver se foi preenchido id de um cliente pré-cadastrado, ou se preencheu o nome do cliente, ou um ou outro, dar exceção se nao preencher nenhum
             if (model.CustomerPersonId == null && string.IsNullOrEmpty(model.CustomerName))
                 return BadRequest(new { errors = "Informar um cliente Pré-Cadastrado, Se não cadastro, informar somente o nome do cliente" });
@@ -167,7 +155,7 @@ public class OrderController : CoreController
 
             if (model.CustomerPersonId != null && model.CustomerPersonId > 0)
             {
-                var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, model.CustomerPersonId.Value);
+                var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(model.CustomerPersonId.Value);
                 if (customerPerson == null)
                     return NotFound(new { errors = "Cliente não encontrado" });
             }
@@ -176,7 +164,7 @@ public class OrderController : CoreController
             decimal productsValues = 0;
             foreach (var orderProduct in order.Products)
             {
-                var product = await _productRepository.GetProductByIdAsync(contextUser, orderProduct.ProductId);
+                var product = await _productRepository.GetProductByIdAsync(orderProduct.ProductId);
                 if (product is not null)
                 {
                     if (product.Quantity <= 0)
@@ -208,7 +196,7 @@ public class OrderController : CoreController
 
             order.TotalValue = productsValues;
 
-            await _orderRepository.AddOrderAsync(contextUser, order);
+            await _orderRepository.AddOrderAsync(order);
             await _productRepository.SaveChangesAsync();
 
             return StatusCode(201, order.Id);
@@ -230,7 +218,6 @@ public class OrderController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPut("{id}")]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] OrderUpdateModel updateModel)
     {
@@ -239,9 +226,7 @@ public class OrderController : CoreController
 
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
-            var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
+            var order = await _orderRepository.GetOrderByIdAsync(id);
             if (order == null)
                 return NotFound(new { errors = "Pedido não encontrado" });
 
@@ -253,7 +238,7 @@ public class OrderController : CoreController
 
             if (updateModel.CustomerPersonId != null && updateModel.CustomerPersonId > 0)
             {
-                var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, updateModel.CustomerPersonId.Value);
+                var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(updateModel.CustomerPersonId.Value);
                 if (customerPerson == null)
                     return NotFound(new { errors = "Cliente não encontrado" });
             }
@@ -264,7 +249,7 @@ public class OrderController : CoreController
                 var updatedItem = updateModel.Products.FirstOrDefault(i => i.ProductId == existingItem.ProductId);
                 if (updatedItem == null)
                 {
-                    var product = await _productRepository.GetProductByIdAsync(contextUser, existingItem.ProductId);
+                    var product = await _productRepository.GetProductByIdAsync(existingItem.ProductId);
                     product.Quantity += existingItem.Quantity;
                     _productRepository.UpdateNoCommit(product);
                 }
@@ -279,7 +264,7 @@ public class OrderController : CoreController
                 var existingItem = order.Products.FirstOrDefault(i => i.ProductId == newItem.ProductId);
                 if (existingItem == null)
                 {
-                    var product = await _productRepository.GetProductByIdAsync(contextUser, newItem.ProductId);
+                    var product = await _productRepository.GetProductByIdAsync(newItem.ProductId);
                     if (product is not null)
                     {
                         if (product.Quantity <= 0)
@@ -312,7 +297,7 @@ public class OrderController : CoreController
                 }
                 else
                 {
-                    var product = await _productRepository.GetProductByIdAsync(contextUser, existingItem.ProductId);
+                    var product = await _productRepository.GetProductByIdAsync(existingItem.ProductId);
                     if (product == null || product.Quantity + existingItem.Quantity < newItem.Quantity)
                     {
                         return BadRequest(new { errors = "Produto não existe ou não possui quantidade disponível" });
@@ -343,7 +328,6 @@ public class OrderController : CoreController
 
             order.TotalValue = productsValues;
             order.UpdatedAt = DateTime.UtcNow;
-            order.UpdatedBy = contextUser.GetCurrentUser();
             await _orderRepository.UpdateAsync(order);
             await _productRepository.SaveChangesAsync();
 
@@ -367,15 +351,12 @@ public class OrderController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPost("{id}/finish")]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> FinishOrder([FromRoute] int id, [FromBody] FinalizeOrderRequestModel requestModel)
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
-            var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
+            var order = await _orderRepository.GetOrderByIdAsync(id);
             if (order == null)
                 return NotFound(new { errors = "Pedido não encontrado" });
 
@@ -397,14 +378,14 @@ public class OrderController : CoreController
             CustomerPerson? customerPerson = null;
             if (order.CustomerPersonId != null && order.CustomerPersonId > 0)
             {
-                customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, order.CustomerPersonId.Value);
+                customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(order.CustomerPersonId.Value);
                 if (customerPerson == null)
                     return NotFound(new { errors = "Cliente não encontrado" });
             }
 
             string valorTotalEmReal = order.TotalValue.ToString("C", new CultureInfo("pt-BR"));
             //Helper para verificar status e forma de pagamento, para fazer os cálculos devidos
-            await _orderHelper.UpdateCalculatePaymentsOrder(contextUser, order, requestModel, customerPerson);
+            await _orderHelper.UpdateCalculatePaymentsOrder(order, requestModel, customerPerson);
 
             if (customerPerson != null)
             {
@@ -457,7 +438,7 @@ public class OrderController : CoreController
 
             try
             {
-               // _printerService.ImprimirPedido(order);
+               _printerService.ImprimirPedido(order);
             }
             catch (Exception ex)
             {
@@ -482,15 +463,12 @@ public class OrderController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpPost("{id}/cancel")]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> CancelOrder([FromRoute] int id)
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
-            var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
+            var order = await _orderRepository.GetOrderByIdAsync(id);
             if (order is null)
                 return NotFound(new { errors = "Pedido não encontrado" });
 
@@ -499,7 +477,6 @@ public class OrderController : CoreController
 
             order.Status = OrderStatus.Canceled;
             order.UpdatedAt = DateTime.UtcNow;
-            order.UpdatedBy = contextUser.GetCurrentUser();
             await _orderRepository.UpdateAsync(order);
 
             return NoContent();
@@ -521,15 +498,12 @@ public class OrderController : CoreController
     /// <response code="403">Acesso negado</response>
     /// <response code="404">Chave não encontrada</response>
     [HttpDelete("{id}")]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
-            var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
+            var order = await _orderRepository.GetOrderByIdAsync(id);
             if (order == null)
                 return NotFound(new { errors = "Pedido não encontrado" });
 
@@ -542,7 +516,7 @@ public class OrderController : CoreController
             {
                 foreach ( var orderProduct in order.Products)
                 {
-                    var product = await _productRepository.GetProductByIdAsync(contextUser, orderProduct.ProductId);
+                    var product = await _productRepository.GetProductByIdAsync(orderProduct.ProductId);
                     if (product is null)
                         return NotFound(new { errors = "Produto não encontrado" });
 
@@ -560,7 +534,7 @@ public class OrderController : CoreController
             {
                 if (order.CustomerPersonId != null && order.CustomerPersonId > 0)
                 {
-                    var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, order.CustomerPersonId.Value);
+                    var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(order.CustomerPersonId.Value);
 
                     if (customerPerson != null)
                     {
@@ -588,7 +562,6 @@ public class OrderController : CoreController
             order.IsDeleted = true;
             order.Status = OrderStatus.Excluded;
             order.UpdatedAt = DateTimeOffset.UtcNow;
-            order.UpdatedBy = contextUser.GetCurrentUser();
 
             await _orderRepository.UpdateAsync(order);
 
@@ -606,15 +579,12 @@ public class OrderController : CoreController
     /// <remarks>Imprimir um pedido</remarks>
     /// <param name="id">Id do pedido</param>
     [HttpPost("{id}/orderPrinted")]
-    [Authorize(Policy.USER)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> OrderPrinted([FromRoute] int id)
     {
         try
         {
-            var contextUser = _userContext.GetContextUser();
-
-            var order = await _orderRepository.GetOrderByIdAsync(contextUser, id);
+            var order = await _orderRepository.GetOrderByIdAsync(id);
             if (order == null)
                 return NotFound(new { errors = "Pedido não encontrado" });
 

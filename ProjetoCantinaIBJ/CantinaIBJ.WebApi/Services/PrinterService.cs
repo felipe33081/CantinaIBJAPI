@@ -21,7 +21,7 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
             e.PrintLine($"Pedido #{pedido.Id}"),
             e.LeftAlign(),
             e.PrintLine($"Data: {DateTime.Now:g}"),
-            e.PrintLine($"Cliente: {nameCustomerPerson}"),
+            e.PrintLine($"Cliente: {nameCustomerPerson?.RemoveAccents()}"),
             e.PrintLine(" "),
             e.PrintLine("--------------------------------"),
             e.PrintLine("QNTD  x  DESC.  x   VALOR UNIT."),
@@ -56,22 +56,22 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
             e.PrintLine($"TOTAL: R$ {pedido.TotalValue:F2}")
         );
 
-        if (pedido.PaymentOfType == CantinaIBJ.Model.Enumerations.PaymentOfType.PIX)
-        {
-            string chavePix = _qrCodePix;
+        //if (pedido.PaymentOfType == CantinaIBJ.Model.Enumerations.PaymentOfType.PIX)
+        //{
+        //    string chavePix = _qrCodePix;
 
-            payload = ByteSplicer.Combine(payload,
-                e.CenterAlign(),
-                e.PrintLine(" "),
-                e.PrintLine("Pague com Pix:"),
-                e.PrintLine(" "),
-                e.PrintQRCode(chavePix),
-                e.PrintLine(" "),
-                e.PrintLine("Obrigado pela preferencia!"),
-                e.FullCut()
-            );
-        }
-        else if (pedido.PaymentOfType == CantinaIBJ.Model.Enumerations.PaymentOfType.Money)
+        //    payload = ByteSplicer.Combine(payload,
+        //        e.CenterAlign(),
+        //        e.PrintLine(" "),
+        //        e.PrintLine("Pague com Pix:"),
+        //        e.PrintLine(" "),
+        //        e.PrintQRCode(chavePix),
+        //        e.PrintLine(" "),
+        //        e.PrintLine("Obrigado pela preferencia!"),
+        //        e.FullCut()
+        //    );
+        //}
+        if (pedido.PaymentOfType == CantinaIBJ.Model.Enumerations.PaymentOfType.Money)
         {
             payload = ByteSplicer.Combine(payload,
                 e.RightAlign(),
