@@ -35,6 +35,7 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
             .Include(x => x.CustomerPerson)
             .Include(x => x.Products).ThenInclude(o => o.Product)
             .Where(x => x.CustomerPerson!.Id == id)
+            .Where(x => x.Status == OrderStatus.Finished)
             .ToListAsync();
     }
 
@@ -43,6 +44,7 @@ public class OrderRepository : RepositoryBase<Order>, IOrderRepository
         var query = Context.Order
             .Include(x => x.CustomerPerson)
             .Include(x => x.Products).ThenInclude(o => o.Product)
+            .Where(c => c.IsDeleted == false)
             .Where(c => c.Status != OrderStatus.Created);
 
         if (!string.IsNullOrEmpty(searchString))

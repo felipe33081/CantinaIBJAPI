@@ -457,7 +457,7 @@ public class OrderController : CoreController
 
             try
             {
-                _printerService.ImprimirPedido(order);
+               // _printerService.ImprimirPedido(order);
             }
             catch (Exception ex)
             {
@@ -556,26 +556,35 @@ public class OrderController : CoreController
                 }
             }
 
-            //deixar ser excluido um pedido finalizado, para caso o operador/usuario tenha errado o pedido
             if (order.Status == OrderStatus.Finished)
             {
-                if (order.PaymentOfType == PaymentOfType.Debitor)
+                if (order.CustomerPersonId != null && order.CustomerPersonId > 0)
                 {
-                    if (order.CustomerPersonId != null && order.CustomerPersonId > 0)
-                    {
-                        var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, order.CustomerPersonId.Value);
-                        if (customerPerson == null)
-                            return NotFound(new { errors = "Cliente não encontrado" });
+                    var customerPerson = await _customerPersonRepository.GetCustomerPersonByIdAsync(contextUser, order.CustomerPersonId.Value);
 
-                        customerPerson.Balance += order.TotalValue;
-                        if (order.PaymentValue != null)
+                    if (customerPerson != null)
+                    {
+                        // CASO 1: Era Fiado (Gerou dívida, agora vamos perdoar/limpar)
+                        if (order.PaymentOfType == PaymentOfType.Debitor)
                         {
-                            customerPerson.Balance = customerPerson.Balance - order.PaymentValue.Value;
+                            // Se ele devia 15, o balance estava -15. Somamos 15 para voltar a 0.
+                            customerPerson.Balance += order.TotalValue;
                         }
+
+                        // CASO 2: Era Crédito/ExtraMoney (Gerou saldo positivo, agora vamos retirar)
+                        else if (order.PaymentOfType == PaymentOfType.ExtraMoney)
+                        {
+                            // Se ele deu 20 para uma conta de 15, ele ganhou 5 de saldo.
+                            // Agora que excluímos, temos que tirar esses 5 que ele ganhou.
+                            decimal saldoGanhoNoPedido = (order.PaymentValue ?? 0) - order.TotalValue;
+                            customerPerson.Balance -= saldoGanhoNoPedido;
+                        }
+
+                        await _customerPersonRepository.UpdateAsync(customerPerson);
                     }
                 }
             }
-            
+
             order.IsDeleted = true;
             order.Status = OrderStatus.Excluded;
             order.UpdatedAt = DateTimeOffset.UtcNow;

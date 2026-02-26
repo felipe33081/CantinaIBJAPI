@@ -24,7 +24,6 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
             e.PrintLine($"Cliente: {nameCustomerPerson}"),
             e.PrintLine(" "),
             e.PrintLine("--------------------------------"),
-            e.PrintLine(" "),
             e.PrintLine("QNTD  x  DESC.  x   VALOR UNIT."),
             e.PrintLine(" ")
         );
@@ -49,13 +48,11 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
         }
 
         payload = ByteSplicer.Combine(payload,
-            e.PrintLine(" "),
             e.PrintLine("--------------------------------"),
             e.LeftAlign(),
             e.PrintLine(" "),
             e.PrintLine($"Pagamento: {pedido.PaymentOfType.ToDescription().RemoveAccents()}"),
             e.RightAlign(),
-            e.PrintLine(" "),
             e.PrintLine($"TOTAL: R$ {pedido.TotalValue:F2}")
         );
 
@@ -71,7 +68,6 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
                 e.PrintQRCode(chavePix),
                 e.PrintLine(" "),
                 e.PrintLine("Obrigado pela preferencia!"),
-                e.PrintLine(" "),
                 e.FullCut()
             );
         }
@@ -84,7 +80,6 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
                 e.PrintLine(" "),
                 e.CenterAlign(),
                 e.PrintLine("Obrigado pela preferencia!"),
-                e.PrintLine(" "),
                 e.FullCut()
             );
         }
@@ -94,7 +89,6 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
                 e.CenterAlign(),
                 e.PrintLine(" "),
                 e.PrintLine("Obrigado pela preferencia!"),
-                e.PrintLine(" "),
                 e.FullCut()
             );
         }
