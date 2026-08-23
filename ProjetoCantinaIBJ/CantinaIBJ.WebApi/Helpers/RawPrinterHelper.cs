@@ -31,6 +31,59 @@ public class RawPrinterHelper
     [DllImport("winspool.Drv", EntryPoint = "WritePrinter", SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
     public static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes, int dwCount, out int dwWritten);
 
+    [DllImport("winspool.drv", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern bool EnumPrinters(int flags, string? name, int level, IntPtr pPrinterEnum,
+        int cbBuf, ref int pcbNeeded, ref int pcReturned);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct PRINTER_INFO_4
+    {
+        public string pPrinterName;
+        public string pServerName;
+        public uint Attributes;
+    }
+
+    /// <summary>
+    /// Lista as impressoras instaladas no Windows (locais e conexoes de rede).
+    /// Usado pela tela de configuracao para o usuario escolher a impressora POS.
+    /// </summary>
+    public static List<string> GetInstalledPrinters()
+    {
+        const int PRINTER_ENUM_LOCAL = 2;
+        const int PRINTER_ENUM_CONNECTIONS = 4;
+        const int level = 4;
+
+        var result = new List<string>();
+        int needed = 0, returned = 0;
+
+        // Primeira chamada descobre o tamanho do buffer necessario.
+        EnumPrinters(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, null, level, IntPtr.Zero, 0, ref needed, ref returned);
+        if (needed == 0)
+            return result;
+
+        IntPtr buffer = Marshal.AllocHGlobal(needed);
+        try
+        {
+            if (!EnumPrinters(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, null, level, buffer, needed, ref needed, ref returned))
+                return result;
+
+            int structSize = Marshal.SizeOf<PRINTER_INFO_4>();
+            IntPtr current = buffer;
+            for (int i = 0; i < returned; i++)
+            {
+                var info = Marshal.PtrToStructure<PRINTER_INFO_4>(current);
+                if (!string.IsNullOrWhiteSpace(info.pPrinterName))
+                    result.Add(info.pPrinterName);
+                current = IntPtr.Add(current, structSize);
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+        return result;
+    }
+
     public static bool SendBytesToPrinter(string szPrinterName, byte[] pBytes)
     {
         IntPtr hPrinter = new IntPtr(0);

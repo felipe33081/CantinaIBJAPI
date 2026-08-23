@@ -117,11 +117,17 @@ public static class ServicesConfiguration
                 });
             c.UseOneOfForPolymorphism();
 
+            // Carrega os comentarios XML apenas se o arquivo existir. No host desktop
+            // (CantinaIBJ.Desktop) o assembly de entrada muda e o XML pode nao estar
+            // presente; sem esta guarda o Swagger quebraria no startup.
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            c.IncludeXmlComments(xmlPath);
-            c.SchemaFilter<DescribeEnumMembers>(XDocument.Load(xmlPath));
-            c.SchemaFilter<IgnoreEnumSchemaFilter>(XDocument.Load(xmlPath));
+            if (File.Exists(xmlPath))
+            {
+                c.IncludeXmlComments(xmlPath);
+                c.SchemaFilter<DescribeEnumMembers>(XDocument.Load(xmlPath));
+                c.SchemaFilter<IgnoreEnumSchemaFilter>(XDocument.Load(xmlPath));
+            }
         });
     }
 

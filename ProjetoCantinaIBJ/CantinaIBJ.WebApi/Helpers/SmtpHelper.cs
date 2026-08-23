@@ -26,13 +26,7 @@ namespace CantinaIBJ.WebApi.Helpers
                 $"{_sendEmailSettings.UrlConfirmation}{randomToken}"
             };
 
-            using (var client = new SmtpClient())
-            {
-                await client.ConnectAsync(_sendEmailSettings.HostDomain, 587, false);
-                await client.AuthenticateAsync(_sendEmailSettings.EmailAddress, _sendEmailSettings.Password);
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-            }
+            await SendSafe(message);
         }
 
         public async Task SendPasswordReseted(string name, string email, string randomPassword)
@@ -48,12 +42,27 @@ namespace CantinaIBJ.WebApi.Helpers
                 $"{randomPassword}"
             };
 
-            using (var client = new SmtpClient())
+            await SendSafe(message);
+        }
+
+        // Envio offline-safe: sem SMTP configurado ou sem internet, apenas ignora.
+        // O e-mail e opcional e nunca deve quebrar um fluxo no retiro sem rede.
+        private async Task SendSafe(MimeMessage message)
+        {
+            if (string.IsNullOrWhiteSpace(_sendEmailSettings.HostDomain))
+                return;
+
+            try
             {
+                using var client = new SmtpClient();
                 await client.ConnectAsync(_sendEmailSettings.HostDomain, 587, false);
                 await client.AuthenticateAsync(_sendEmailSettings.EmailAddress, _sendEmailSettings.Password);
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SMTP] E-mail ignorado (offline?): {ex.Message}");
             }
         }
     }

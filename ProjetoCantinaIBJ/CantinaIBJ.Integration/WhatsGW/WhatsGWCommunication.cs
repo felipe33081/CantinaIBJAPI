@@ -15,9 +15,14 @@ public class WhatsGWCommunication : IWhatsGWService
 
     public async Task<WhatsGWSendMessageResponse?> WhatsSendMessage(string toNumber, string message)
     {
+        // Modo offline: sem configuracao de WhatsApp, apenas ignora silenciosamente.
+        // Notificacao e opcional e NUNCA deve quebrar uma venda no retiro sem internet.
+        if (string.IsNullOrWhiteSpace(_settings.BaseUrl) || string.IsNullOrWhiteSpace(_settings.ApiKey))
+            return null;
+
         try
         {
-            using var client = new HttpClient();
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
             var url = _settings.BaseUrl;
 
             var data = new
@@ -37,17 +42,16 @@ public class WhatsGWCommunication : IWhatsGWService
             if (response.IsSuccessStatusCode)
             {
                 var res = await response.Content.ReadAsStringAsync();
-
                 return JsonConvert.DeserializeObject<WhatsGWSendMessageResponse>(res);
             }
-            else
-            {
-                throw new Exception("Erro ao enviar mensagem de notificação via Whatsapp");
-            }
+
+            return null;
         }
         catch (Exception ex)
         {
-            throw new Exception(ex.Message);
+            // Sem internet / servico indisponivel: registra e segue. Nao propaga.
+            Console.WriteLine($"[WhatsGW] Notificacao ignorada (offline?): {ex.Message}");
+            return null;
         }
     }
 

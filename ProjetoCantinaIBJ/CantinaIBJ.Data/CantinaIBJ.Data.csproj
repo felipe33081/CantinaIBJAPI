@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Migrations\" />
+    <!-- Migrations antigas sao especificas do PostgreSQL/Npgsql. O app desktop usa
+         SQLite com EnsureCreated() no startup, entao elas ficam fora da compilacao. -->
+    <Compile Remove="Migrations\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,7 +24,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.4" />
   </ItemGroup>
 
   <ItemGroup>

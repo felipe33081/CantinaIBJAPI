@@ -1,13 +1,52 @@
-﻿using CantinaIBJ.Framework.Helpers;
+﻿using CantinaIBJ.Data.Context;
+using CantinaIBJ.Framework.Helpers;
 using CantinaIBJ.Model.Interfaces;
 using CantinaIBJ.Model.Orders;
 using ESCPOS_NET.Emitters;
 using ESCPOS_NET.Utilities;
 
-public class PrinterService(IConfiguration configuration) : IPrinterService
+public class PrinterService(IConfiguration configuration, PostgreSqlContext context) : IPrinterService
 {
-    private readonly string _nomeImpressora = configuration["Printer:Name"];
     private readonly string _qrCodePix = configuration["Printer:PixCopiaECola"];
+
+    /// <summary>
+    /// Impressora a usar: a escolhida na tela de Configuracoes (salva no banco),
+    /// com fallback para o appsettings ("Printer:Name") caso nada tenha sido escolhido.
+    /// </summary>
+    private string ResolvePrinterName()
+    {
+        var selected = context.AppSetting.FirstOrDefault()?.PrinterName;
+        if (!string.IsNullOrWhiteSpace(selected))
+            return selected;
+
+        var fromConfig = configuration["Printer:Name"];
+        if (!string.IsNullOrWhiteSpace(fromConfig))
+            return fromConfig;
+
+        throw new InvalidOperationException("Nenhuma impressora selecionada. Escolha uma em Configuracoes.");
+    }
+
+    public void ImprimirTeste()
+    {
+        var e = new EPSON();
+        var payload = ByteSplicer.Combine(
+            e.CenterAlign(),
+            e.PrintLine(" "),
+            e.PrintLine("CANTINA IBJ"),
+            e.PrintLine("Teste de impressao"),
+            e.LeftAlign(),
+            e.PrintLine($"Data: {DateTime.Now:g}"),
+            e.PrintLine("--------------------------------"),
+            e.CenterAlign(),
+            e.PrintLine("Impressora OK!"),
+            e.PrintLine(" "),
+            e.FullCut()
+        );
+
+        var ok = RawPrinterHelper.SendBytesToPrinter(ResolvePrinterName(), payload);
+        if (!ok)
+            throw new InvalidOperationException("Falha ao enviar o teste para a impressora selecionada.");
+    }
 
     public void ImprimirPedido(Order pedido)
     {
@@ -93,6 +132,6 @@ public class PrinterService(IConfiguration configuration) : IPrinterService
             );
         }
 
-        RawPrinterHelper.SendBytesToPrinter(_nomeImpressora, payload);
+        RawPrinterHelper.SendBytesToPrinter(ResolvePrinterName(), payload);
     }
 }
